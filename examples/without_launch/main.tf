@@ -28,7 +28,7 @@ module "eks-node-infra" {
   cluster_name    = module.eks-master.cluster_name
   cluster_version = module.eks-master.cluster_version
   node-role       = module.iam-eks.node-iam-arn
-  private_subnet  = ["subnet-abcabcabc", "subnet-abcabcabc"]
+  private_subnet  = ["subnet-abcabc","subnet-abcabc","subnet-abcabc"]
   node_name       = "infra"
   desired_size    = 4
   max_size        = 4

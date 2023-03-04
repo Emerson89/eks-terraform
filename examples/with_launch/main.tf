@@ -23,12 +23,12 @@ module "eks-master" {
 
 
 module "eks-node-infra" {
-  source = "github.com/Emerson89/eks-terraform.gi//nodes?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
 
   cluster_name    = module.eks-master.cluster_name
   cluster_version = module.eks-master.cluster_version
   node-role       = module.iam-eks.node-iam-arn
-  private_subnet  = module.vpc.private_ids
+  private_subnet  = ["subnet-abcabc","subnet-abcabc","subnet-abcabc"]
   node_name       = "infra"
   desired_size    = 4
   max_size        = 4
