@@ -14,6 +14,20 @@ module "sg-cluster" {
   tags = local.tags
 }
 
+module "sg-node" {
+  source = "github.com/Emerson89/terraform-modules.git//sg?ref=main"
+
+  sgname                   = "eks_node_sg"
+  environment              = local.environment
+  vpc_id                   = "vpc-id"
+  source_security_group_id = module.sg-cluster.sg_id
+
+  ingress_with_source_security_group = local.ingress_node
+  ingress_with_cidr_blocks           = local.ingress_cluster_api
+
+  tags = var.tags
+}
+
 ## EKS
 
 module "iam-eks" {
