@@ -1,5 +1,11 @@
 ## Variables EKS
 
+variable "cluster_name" {
+  description = "Name cluster"
+  type        = string
+  default     = "development"
+}
+
 variable "kubernetes_version" {
   description = "Version cluster"
   type        = string

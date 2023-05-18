@@ -17,3 +17,15 @@ output "cluster_endpoint" {
 output "cluster_cert" {
   value = data.aws_eks_cluster.this.certificate_authority[0].data
 }
+
+output "cluster_oidc" {
+  value = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+output "oidc_arn" {
+  value = aws_iam_openid_connect_provider.this.arn
+}
+
+output "aws_eks_cluster" {
+  value = {}
+}

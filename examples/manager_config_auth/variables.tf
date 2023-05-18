@@ -1,5 +1,7 @@
 ## Variables EKS
 
+variable "profile" {}
+
 variable "kubernetes_version" {
   description = "Version cluster"
   type        = string

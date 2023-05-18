@@ -11,6 +11,17 @@ resource "aws_eks_node_group" "eks_node_group" {
   node_role_arn   = var.node-role
   instance_types  = var.launch_create ? null : var.instance_types
   disk_size       = var.launch_create ? null : var.disk_size
+  labels          = var.labels
+
+  dynamic "taint" {
+    for_each = var.taints
+
+    content {
+      key    = taint.value.key
+      value  = try(taint.value.value, null)
+      effect = taint.value.effect
+    }
+  }
 
   subnet_ids = var.private_subnet
 

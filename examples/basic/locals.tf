@@ -3,21 +3,12 @@ locals {
   tags = {
     Environment = "stg"
   }
-  cluster_name = "k8s"
-
+  
   ingress_cluster = {
     "ingress_rule_1" = {
       "from_port" = "443"
       "to_port"   = "443"
       "protocol"  = "tcp"
-    },
-  }
-  
-  ingress_node = {
-    "ingress_rule_1" = {
-      "from_port" = "0"
-      "to_port"   = "65535"
-      "protocol"  = "-1"
     },
   }
 

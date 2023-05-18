@@ -1,3 +1,37 @@
+variable "mapRoles" {
+  description = "List of role maps to add to the aws-auth configmap"
+  type        = list(any)
+  default     = []
+}
+
+variable "mapUsers" {
+  description = "List of user maps to add to the aws-auth configmap"
+  type        = list(any)
+  default     = []
+}
+
+variable "mapAccounts" {
+  description = "List of accounts maps to add to the aws-auth configmap"
+  type        = list(any)
+  default     = []
+}
+
+variable "create_aws_auth_configmap" {
+  type    = bool
+  default = false
+}
+
+variable "manage_aws_auth_configmap" {
+  type    = bool
+  default = false
+}
+
+variable "node-role" {
+  description = "Role node"
+  type        = string
+  default     = null
+}
+
 variable "cluster_name" {
   description = "Name cluster"
   type        = string
@@ -54,5 +88,24 @@ variable "tags" {
 variable "addons" {
   type    = map(any)
   default = {}
-
 }
+
+variable "enabled_cluster_log_types" {
+  description = "List of the desired control plane logging to enable. For more information, see Amazon EKS Control Plane Logging."
+  type        = list(string)
+  default     = []
+}
+
+#variable "addons" {
+#  type    = map(any)
+#  default = {
+#    addons = {
+#    "ebs-csi-controller-sa" = {
+#      "name"       = "aws-ebs-csi-driver"
+#      "data"       = "ebs-csi-controller-sa"
+#      "version"    = "v1.14.1-eksbuild.1"
+#      "policy_arn" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+#    }
+#  }
+#  }
+#}

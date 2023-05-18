@@ -14,34 +14,20 @@ module "sg-cluster" {
   tags = local.tags
 }
 
-module "sg-node" {
-  source = "github.com/Emerson89/terraform-modules.git//sg?ref=main"
-
-  sgname                   = "eks_node_sg"
-  environment              = local.environment
-  vpc_id                   = "vpc-id"
-  source_security_group_id = module.sg-cluster.sg_id
-
-  ingress_with_source_security_group = local.ingress_node
-  ingress_with_cidr_blocks           = local.ingress_cluster_api
-
-  tags = local.tags
-}
-
 ## EKS
 
 module "iam-eks" {
   source = "github.com/Emerson89/modules-terraform.git//eks//iam-eks?ref=main"
 
-  cluster_name = local.cluster_name
-  environment  = var.environment
+  cluster_name = var.cluster_name
+  environment  = local.environment
 
 }
 
 module "eks-master" {
   source = "github.com/Emerson89/modules-terraform.git//eks//master?ref=main"
 
-  cluster_name            = local.cluster_name
+  cluster_name            = var.cluster_name
   master-role             = module.iam-eks.master-iam-arn
   kubernetes_version      = var.kubernetes_version
   subnet_ids              = ["subnet-abcabcabc", "subnet-abcabcabc"]
@@ -59,7 +45,7 @@ module "eks-node-infra" {
   cluster_name    = module.eks-master.cluster_name
   cluster_version = module.eks-master.cluster_version
   node-role       = module.iam-eks.node-iam-arn
-  private_subnet  = module.vpc.private_ids
+  private_subnet  = ["subnet-abcabcabc", "subnet-abcabcabc"]
   node_name       = "infra"
   desired_size    = 4
   max_size        = 4
@@ -67,14 +53,6 @@ module "eks-node-infra" {
   environment     = local.environment
   instance_types  = ["t3.micro"]
   create_node     = true
-
-  ## Vars launch-template if var.create_launch = true
-
-  launch_create         = true
-  name                  = "lt-infra"
-  security-group-node   = [module.sg-node.sg_id]
-  endpoint              = module.eks-master.cluster_endpoint
-  certificate_authority = module.eks-master.cluster_cert
 
   tags = local.tags
 

@@ -10,6 +10,18 @@ variable "node_name" {
   default     = null
 }
 
+variable "taints" {
+  description = "The Kubernetes taints to be applied to the nodes in the node group. Maximum of 50 taints per node group"
+  type        = any
+  default     = {}
+}
+
+variable "labels" {
+  description = "Key-value map of Kubernetes labels. Only labels that are applied with the EKS API are managed by this argument. Other Kubernetes labels applied to the EKS Node Group will not be managed"
+  type        = map(string)
+  default     = null
+}
+
 variable "launch_create" {
   description = "Create launch"
   type        = bool

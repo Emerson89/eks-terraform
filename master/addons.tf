@@ -18,7 +18,7 @@ data "aws_iam_policy_document" "example_assume_role_policy" {
     condition {
       test     = "StringEquals"
       variable = "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:sub"
-      values   = ["system:serviceaccount:kube-system:${each.value.data}"]
+      values   = ["system:serviceaccount:kube-system:${each.value.serviceaccount}"]
     }
 
     principals {

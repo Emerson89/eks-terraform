@@ -36,6 +36,7 @@ No modules.
 | <a name="input_environment"></a> [environment](#input\_environment) | Env tags | `string` | `null` | no |
 | <a name="input_instance_types"></a> [instance\_types](#input\_instance\_types) | Type instances | `list(string)` | <pre>[<br>  "t3.micro"<br>]</pre> | no |
 | <a name="input_instance_types_launch"></a> [instance\_types\_launch](#input\_instance\_types\_launch) | Type instances | `string` | `"t3.micro"` | no |
+| <a name="input_labels"></a> [labels](#input\_labels) | Key-value map of Kubernetes labels. Only labels that are applied with the EKS API are managed by this argument. Other Kubernetes labels applied to the EKS Node Group will not be managed | `map(string)` | `null` | no |
 | <a name="input_launch_create"></a> [launch\_create](#input\_launch\_create) | Create launch | `bool` | `false` | no |
 | <a name="input_launch_template_id"></a> [launch\_template\_id](#input\_launch\_template\_id) | The ID of an existing launch template to use. Required when `create_launch_template` = `false` and `use_custom_launch_template` = `true` | `string` | `""` | no |
 | <a name="input_launch_template_version"></a> [launch\_template\_version](#input\_launch\_template\_version) | Launch template version number. The default is `$Default` | `string` | `null` | no |
@@ -47,9 +48,12 @@ No modules.
 | <a name="input_private_subnet"></a> [private\_subnet](#input\_private\_subnet) | Subnet private | `list(any)` | `[]` | no |
 | <a name="input_security-group-node"></a> [security-group-node](#input\_security-group-node) | Security group nodes | `list(string)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(any)` | `{}` | no |
+| <a name="input_taints"></a> [taints](#input\_taints) | The Kubernetes taints to be applied to the nodes in the node group. Maximum of 50 taints per node group | `any` | `{}` | no |
 | <a name="input_volume-size"></a> [volume-size](#input\_volume-size) | Size volume ebs | `string` | `""` | no |
 | <a name="input_volume-type"></a> [volume-type](#input\_volume-type) | Type volume ebs | `string` | `""` | no |
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+|------|-------------|
+| <a name="output_node_group_name"></a> [node\_group\_name](#output\_node\_group\_name) | n/a |

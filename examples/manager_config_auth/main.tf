@@ -14,27 +14,13 @@ module "sg-cluster" {
   tags = local.tags
 }
 
-module "sg-node" {
-  source = "github.com/Emerson89/terraform-modules.git//sg?ref=main"
-
-  sgname                   = "eks_node_sg"
-  environment              = local.environment
-  vpc_id                   = "vpc-id"
-  source_security_group_id = module.sg-cluster.sg_id
-
-  ingress_with_source_security_group = local.ingress_node
-  ingress_with_cidr_blocks           = local.ingress_cluster_api
-
-  tags = local.tags
-}
-
 ## EKS
 
 module "iam-eks" {
   source = "github.com/Emerson89/modules-terraform.git//eks//iam-eks?ref=main"
 
   cluster_name = local.cluster_name
-  environment  = var.environment
+  environment  = local.environment
 
 }
 
@@ -49,7 +35,25 @@ module "eks-master" {
   environment             = local.environment
   endpoint_private_access = var.endpoint_private_access
   endpoint_public_access  = var.endpoint_public_access
+  addons                  = local.addons
 
+  create_aws_auth_configmap = true
+  manage_aws_auth_configmap = true
+  node-role                 = module.iam-eks.node-iam-arn
+  mapUsers = [
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxxxxxx:user/user@example.com"
+      username = "user"
+      groups   = ["system:masters"]
+
+    },
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxxxxxx:user/user2@example.com"
+      username = "user2"
+      groups   = ["system:masters"]
+
+    },
+  ]
 }
 
 
@@ -59,7 +63,7 @@ module "eks-node-infra" {
   cluster_name    = module.eks-master.cluster_name
   cluster_version = module.eks-master.cluster_version
   node-role       = module.iam-eks.node-iam-arn
-  private_subnet  = module.vpc.private_ids
+  private_subnet  = ["subnet-abcabcabc", "subnet-abcabcabc"]
   node_name       = "infra"
   desired_size    = 4
   max_size        = 4
@@ -67,14 +71,6 @@ module "eks-node-infra" {
   environment     = local.environment
   instance_types  = ["t3.micro"]
   create_node     = true
-
-  ## Vars launch-template if var.create_launch = true
-
-  launch_create         = true
-  name                  = "lt-infra"
-  security-group-node   = [module.sg-node.sg_id]
-  endpoint              = module.eks-master.cluster_endpoint
-  certificate_authority = module.eks-master.cluster_cert
 
   tags = local.tags
 
