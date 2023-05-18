@@ -35,7 +35,6 @@ variable "node-role" {
 variable "cluster_name" {
   description = "Name cluster"
   type        = string
-  default     = null
 }
 
 variable "environment" {
@@ -95,17 +94,3 @@ variable "enabled_cluster_log_types" {
   type        = list(string)
   default     = []
 }
-
-#variable "addons" {
-#  type    = map(any)
-#  default = {
-#    addons = {
-#    "ebs-csi-controller-sa" = {
-#      "name"       = "aws-ebs-csi-driver"
-#      "data"       = "ebs-csi-controller-sa"
-#      "version"    = "v1.14.1-eksbuild.1"
-#      "policy_arn" = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-#    }
-#  }
-#  }
-#}

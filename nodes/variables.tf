@@ -7,7 +7,6 @@ variable "cluster_name" {
 variable "node_name" {
   description = "Name node group"
   type        = string
-  default     = null
 }
 
 variable "taints" {

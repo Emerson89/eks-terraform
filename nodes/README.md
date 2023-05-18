@@ -44,7 +44,7 @@ No modules.
 | <a name="input_min_size"></a> [min\_size](#input\_min\_size) | Numbers min\_size | `number` | `1` | no |
 | <a name="input_name"></a> [name](#input\_name) | Name launch configuration | `string` | `""` | no |
 | <a name="input_node-role"></a> [node-role](#input\_node-role) | Role node | `string` | `""` | no |
-| <a name="input_node_name"></a> [node\_name](#input\_node\_name) | Name node group | `string` | `null` | no |
+| <a name="input_node_name"></a> [node\_name](#input\_node\_name) | Name node group | `string` | n/a | yes |
 | <a name="input_private_subnet"></a> [private\_subnet](#input\_private\_subnet) | Subnet private | `list(any)` | `[]` | no |
 | <a name="input_security-group-node"></a> [security-group-node](#input\_security-group-node) | Security group nodes | `list(string)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(any)` | `{}` | no |
