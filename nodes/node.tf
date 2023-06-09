@@ -12,6 +12,7 @@ resource "aws_eks_node_group" "eks_node_group" {
   instance_types  = var.launch_create ? null : var.instance_types
   disk_size       = var.launch_create ? null : var.disk_size
   labels          = var.labels
+  capacity_type   = var.capacity_type
 
   dynamic "taint" {
     for_each = var.taints
@@ -59,4 +60,48 @@ resource "aws_eks_node_group" "eks_node_group" {
   timeouts {
     create = "10m"
   }
+}
+
+### Fargate
+
+resource "aws_eks_fargate_profile" "this" {
+  count = var.create_fargate ? 1 : 0
+
+  cluster_name           = var.cluster_name
+  fargate_profile_name   = var.fargate_profile_name
+  pod_execution_role_arn = try(aws_iam_role.this[0].arn, null)
+  subnet_ids             = var.private_subnet
+
+  dynamic "selector" {
+    for_each = var.selectors
+
+    content {
+      namespace = selector.value.namespace
+      labels    = lookup(selector.value, "labels", {})
+    }
+  }
+}
+
+resource "aws_iam_role" "this" {
+  count = var.create_fargate ? 1 : 0
+
+  name = "eks-fargate-profile-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "eks-fargate-pods.amazonaws.com"
+      }
+    }]
+    Version = "2012-10-17"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "AmazonEKSFargatePodExecutionRolePolicy" {
+  count = var.create_fargate ? 1 : 0
+
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+  role       = try(aws_iam_role.this[0].name, null)
 }

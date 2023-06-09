@@ -1,3 +1,7 @@
-output "node_group_name" {
-  value = aws_eks_node_group.eks_node_group.node_group_name
-}
+#output "version" {
+#  value = aws_launch_template.this.latest_version
+#}
+#
+#output "id" {
+#  value = aws_launch_template.this.id
+#}

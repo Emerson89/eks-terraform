@@ -35,6 +35,7 @@ variable "node-role" {
 variable "cluster_name" {
   description = "Name cluster"
   type        = string
+  default     = null
 }
 
 variable "environment" {
@@ -68,8 +69,9 @@ variable "endpoint_private_access" {
 }
 
 variable "security_group_ids" {
-  type    = list(any)
-  default = []
+  description = "Security group ids"
+  type        = list(any)
+  default     = []
 }
 
 variable "subnet_ids" {
@@ -80,7 +82,7 @@ variable "subnet_ids" {
 
 variable "tags" {
   description = "A mapping of tags to assign to the resource"
-  type        = map(any)
+  type        = map(string)
   default     = {}
 }
 

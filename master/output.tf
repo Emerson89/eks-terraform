@@ -24,8 +24,4 @@ output "cluster_oidc" {
 
 output "oidc_arn" {
   value = aws_iam_openid_connect_provider.this.arn
-}
-
-output "aws_eks_cluster" {
-  value = {}
-}
+} 

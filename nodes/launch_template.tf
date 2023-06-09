@@ -1,6 +1,7 @@
 resource "random_uuid" "custom" {}
 
 data "aws_ami" "eks-worker" {
+  count = var.launch_create ? 1 : 0
   filter {
     name   = "name"
     values = ["amazon-eks-node-${var.cluster_version}-*"]
@@ -34,18 +35,28 @@ resource "aws_launch_template" "this" {
     security_groups       = var.security-group-node
 
   }
-
-  image_id      = data.aws_ami.eks-worker.id
+  
+  iam_instance_profile {
+    name = var.iam_instance_profile
+  }
+  
+  image_id      = data.aws_ami.eks-worker[0].id
   instance_type = var.instance_types_launch
 
   user_data = base64encode(<<-EOT
+  MIME-Version: 1.0
+  Content-Type: multipart/mixed; boundary="//"
+  
+  --//
+  Content-Type: text/x-shellscript; charset="us-ascii"
   #!/bin/bash
-  set -o xtrace
-
-  /etc/eks/bootstrap.sh \
-  --apiserver-endpoint '${var.endpoint}' \
-  --b64-cluster-ca '${var.certificate_authority}' \
-  '${var.cluster_name}'
+    
+  if [ ${var.use-max-pods} = true ]; then
+    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --use-max-pods=${var.use-max-pods}  --kubelet-extra-args '--max-pods=${var.max-pods}'
+  else
+    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint}
+  fi
+  --//--
   EOT
   )
 

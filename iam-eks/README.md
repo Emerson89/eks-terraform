@@ -33,7 +33,7 @@ No modules.
 |------|-------------|------|---------|:--------:|
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name cluster | `string` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Env tags | `string` | `null` | no |
-| <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(any)` | `{}` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(string)` | `{}` | no |
 
 ## Outputs
 
@@ -42,5 +42,5 @@ No modules.
 | <a name="output_master-iam-arn"></a> [master-iam-arn](#output\_master-iam-arn) | n/a |
 | <a name="output_master-iam-name"></a> [master-iam-name](#output\_master-iam-name) | n/a |
 | <a name="output_node-iam-arn"></a> [node-iam-arn](#output\_node-iam-arn) | n/a |
-| <a name="output_node-iam-instance-arn"></a> [node-iam-instance-arn](#output\_node-iam-instance-arn) | n/a |
 | <a name="output_node-iam-name"></a> [node-iam-name](#output\_node-iam-name) | n/a |
+| <a name="output_node-iam-name-profile"></a> [node-iam-name-profile](#output\_node-iam-name-profile) | n/a |
