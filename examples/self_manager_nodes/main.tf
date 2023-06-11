@@ -22,11 +22,13 @@ module "eks-node-infra" {
   max_size        = 2
   min_size        = 1
   environment     = local.environment
-  instance_types  = ["t3.micro"]
   create_node     = false
 
-  launch_create = true
-  name          = local.name_lt
+  launch_create         = true
+  name                  = local.name_lt
+  instance_types_launch = "t3.micro"
+  volume-size           = 30
+
   network_interfaces = [
     {
       security_groups = ["sg-abcdabcdabcd"]
@@ -50,8 +52,8 @@ module "eks-node-infra" {
       }
     }
   ]
-  endpoint              = "cluster_endpoint"
-  certificate_authority = "cluster_cert"
+  endpoint              = var.cluster_endpoint
+  certificate_authority = var.cluster_ca_cert
   iam_instance_profile  = "arn-abcbdabcdbabc"
   taints_lt             = "dedicated=${local.environment}:NoSchedule"
 

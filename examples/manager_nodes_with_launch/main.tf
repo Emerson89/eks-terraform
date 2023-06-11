@@ -25,18 +25,20 @@ module "eks-node-infra" {
   max_size        = 2
   min_size        = 1
   environment     = local.environment
-  instance_types  = ["t3.micro"]
   create_node     = true
 
-  launch_create = true
-  name          = "lt-infra"
+  launch_create         = true
+  name                  = "lt-infra"
+  instance_types_launch = "t3.micro"
+  volume-size           = 30
+
   network_interfaces = [
     {
       security_groups = ["sg-abcdabcdabcd"]
     }
   ]
-  endpoint              = "endpoint-cluster"
-  certificate_authority = "cluster-cert"
+  endpoint              = var.cluster_endpoint
+  certificate_authority = var.cluster_ca_cert
 
   tags = local.tags
 
