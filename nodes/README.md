@@ -7,7 +7,6 @@ No requirements.
 | Name | Version |
 |------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
-| <a name="provider_random"></a> [random](#provider\_random) | n/a |
 
 ## Modules
 
@@ -23,7 +22,6 @@ No modules.
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSFargatePodExecutionRolePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_launch_template.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template) | resource |
-| [random_uuid.custom](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) | resource |
 | [aws_ami.eks-worker](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ami) | data source |
 
 ## Inputs
@@ -47,7 +45,7 @@ No modules.
 | <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | Configuration block(s) containing resource tags | `any` | `[]` | no |
 | <a name="input_fargate_profile_name"></a> [fargate\_profile\_name](#input\_fargate\_profile\_name) | Name of the EKS Fargate Profile | `string` | `""` | no |
 | <a name="input_health_check_grace_period"></a> [health\_check\_grace\_period](#input\_health\_check\_grace\_period) | Time (in seconds) after instance comes into service before checking health. | `number` | `300` | no |
-| <a name="input_health_check_type"></a> [health\_check\_type](#input\_health\_check\_type) | EC2 or ELB. Controls how health checking is done. | `bool` | `"EC2"` | no |
+| <a name="input_health_check_type"></a> [health\_check\_type](#input\_health\_check\_type) | EC2 or ELB. Controls how health checking is done. | `string` | `"EC2"` | no |
 | <a name="input_iam_instance_profile"></a> [iam\_instance\_profile](#input\_iam\_instance\_profile) | he IAM Instance Profile to launch the instance with | `string` | `null` | no |
 | <a name="input_instance_types"></a> [instance\_types](#input\_instance\_types) | Type instances | `list(string)` | <pre>[<br>  "t3.micro"<br>]</pre> | no |
 | <a name="input_instance_types_launch"></a> [instance\_types\_launch](#input\_instance\_types\_launch) | Type instances | `string` | `"t3.micro"` | no |
@@ -67,10 +65,11 @@ No modules.
 | <a name="input_node-role"></a> [node-role](#input\_node-role) | Role node | `string` | `""` | no |
 | <a name="input_node_name"></a> [node\_name](#input\_node\_name) | Name node | `string` | `null` | no |
 | <a name="input_private_subnet"></a> [private\_subnet](#input\_private\_subnet) | Subnet private | `list(any)` | `[]` | no |
-| <a name="input_security-group-node"></a> [security-group-node](#input\_security-group-node) | Security group nodes | `list(string)` | `[]` | no |
 | <a name="input_selectors"></a> [selectors](#input\_selectors) | Configuration block(s) for selecting Kubernetes Pods to execute with this Fargate Profile | `any` | `[]` | no |
+| <a name="input_tag_specifications"></a> [tag\_specifications](#input\_tag\_specifications) | The tags to apply to the resources during launch | `any` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(string)` | `{}` | no |
 | <a name="input_taints"></a> [taints](#input\_taints) | The Kubernetes taints to be applied to the nodes in the node group. Maximum of 50 taints per node group | `any` | `{}` | no |
+| <a name="input_taints_lt"></a> [taints\_lt](#input\_taints\_lt) | Taints to be applied to the launch template | `string` | `""` | no |
 | <a name="input_target_group_arns"></a> [target\_group\_arns](#input\_target\_group\_arns) | Set of aws\_alb\_target\_group ARNs, for use with Application or Network Load Balancing. | `list(string)` | `[]` | no |
 | <a name="input_termination_policies"></a> [termination\_policies](#input\_termination\_policies) | list of policies to decide how the instances in the Auto Scaling Group should be terminated. The allowed values are OldestInstance, NewestInstance, OldestLaunchConfiguration, ClosestToNextInstanceHour, OldestLaunchTemplate, AllocationStrategy, Default | `list(string)` | <pre>[<br>  "OldestInstance"<br>]</pre> | no |
 | <a name="input_use-max-pods"></a> [use-max-pods](#input\_use-max-pods) | n/a | `bool` | `false` | no |

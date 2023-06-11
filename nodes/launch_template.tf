@@ -1,4 +1,6 @@
-resource "random_uuid" "custom" {}
+locals {
+  labels_lt = "eks.amazonaws.com/nodegroup=${var.name_asg}"
+}
 
 data "aws_ami" "eks-worker" {
   count = var.launch_create ? 1 : 0
@@ -13,7 +15,7 @@ data "aws_ami" "eks-worker" {
 resource "aws_launch_template" "this" {
   count = var.launch_create ? 1 : 0
 
-  name                   = format("%s-%s-%s", var.name, var.environment, random_uuid.custom.result)
+  name                   = format("%s-%s", var.name, var.environment)
   update_default_version = true
 
   monitoring {
@@ -30,16 +32,20 @@ resource "aws_launch_template" "this" {
     }
   }
 
-  network_interfaces {
-    delete_on_termination = true
-    security_groups       = var.security-group-node
-
+  dynamic "network_interfaces" {
+    for_each = var.network_interfaces
+    content {
+      associate_public_ip_address = try(network_interfaces.value.associate_public_ip_address, false)
+      delete_on_termination       = try(network_interfaces.value.delete_on_termination, true)
+      security_groups             = try(network_interfaces.value.security_groups, [])
+      subnet_id                   = try(network_interfaces.value.subnet_id, null)
+    }
   }
-  
+
   iam_instance_profile {
     name = var.iam_instance_profile
   }
-  
+
   image_id      = data.aws_ami.eks-worker[0].id
   instance_type = var.instance_types_launch
 
@@ -52,41 +58,29 @@ resource "aws_launch_template" "this" {
   #!/bin/bash
     
   if [ ${var.use-max-pods} = true ]; then
-    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --use-max-pods=${var.use-max-pods}  --kubelet-extra-args '--max-pods=${var.max-pods}'
+    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --use-max-pods=${var.use-max-pods}  --kubelet-extra-args '--max-pods=${var.max-pods} --register-with-taints=${var.taints_lt} --node-labels=${local.labels_lt}'
   else
-    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint}
+    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --kubelet-extra-args '--register-with-taints=${var.taints_lt} --node-labels=${local.labels_lt}'
   fi
   --//--
   EOT
   )
 
   tags = {
-    Name        = format("%s-%s", var.name, random_uuid.custom.result)
+    Name        = format("%s-%s", var.name, var.environment)
     Environment = var.environment
     Platform    = "k8s"
-    Type        = "node-launch-template"
+    Type        = "launch-template"
   }
 
-  tag_specifications {
-    resource_type = "instance"
+  dynamic "tag_specifications" {
+    for_each = var.tag_specifications
+    content {
+      resource_type = tag_specifications.value.resource_type
 
-    tags = {
-      Name        = format("%s-node-%s", var.name, var.environment)
-      Environment = var.environment
-      Platform    = "k8s"
-      Type        = "node"
+      tags = tag_specifications.value.tags
     }
-  }
 
-  tag_specifications {
-    resource_type = "volume"
-
-    tags = {
-      Name        = format("%s-node-%s-%s", var.name, var.environment, random_uuid.custom.result)
-      Environment = var.environment
-      Platform    = "k8s"
-      Type        = "node"
-    }
   }
 
   lifecycle {

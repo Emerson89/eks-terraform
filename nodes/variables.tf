@@ -8,6 +8,12 @@ variable "use-max-pods" {
   default = false
 }
 
+variable "taints_lt" {
+  description = "Taints to be applied to the launch template"
+  type        = string
+  default     = ""
+}
+
 variable "taints" {
   description = "The Kubernetes taints to be applied to the nodes in the node group. Maximum of 50 taints per node group"
   type        = any
@@ -134,6 +140,13 @@ variable "name" {
   default     = ""
 }
 
+
+variable "tag_specifications" {
+  description = "The tags to apply to the resources during launch"
+  type        = any
+  default     = []
+}
+
 variable "volume-size" {
   description = "Size volume ebs"
   type        = string
@@ -144,12 +157,6 @@ variable "volume-type" {
   description = "Type volume ebs"
   type        = string
   default     = ""
-}
-
-variable "security-group-node" {
-  description = "Security group nodes"
-  type        = list(string)
-  default     = []
 }
 
 variable "endpoint" {
@@ -163,6 +170,8 @@ variable "certificate_authority" {
   type        = string
   default     = ""
 }
+
+## Fargate profile
 
 variable "create_fargate" {
   description = "Create fargate profile"
@@ -194,7 +203,7 @@ variable "version_lt" {
 
 variable "health_check_type" {
   description = "EC2 or ELB. Controls how health checking is done."
-  type        = bool
+  type        = string
   default     = "EC2"
 }
 

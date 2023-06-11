@@ -1,18 +1,18 @@
 locals {
   aws_auth_configmap_data = {
     mapRoles = yamlencode(concat([
-     {
+      {
         rolearn  = "${var.node-role}"
         username = "system:node:{{EC2PrivateDNSName}}"
-        groups   = [
+        groups = [
           "system:bootstrappers",
           "system:nodes",
         ]
-     },
-    ],
+      },
+      ],
     var.mapRoles))
-   mapUsers    = yamlencode(var.mapUsers)
-   mapAccounts = yamlencode(var.mapAccounts)
+    mapUsers    = yamlencode(var.mapUsers)
+    mapAccounts = yamlencode(var.mapAccounts)
   }
 }
 
@@ -32,8 +32,8 @@ resource "kubernetes_config_map" "aws_auth" {
 }
 
 resource "kubernetes_config_map_v1_data" "aws_auth" {
-  count      = var.manage_aws_auth_configmap ? 1 : 0
-  
+  count = var.manage_aws_auth_configmap ? 1 : 0
+
   force = true
 
   metadata {

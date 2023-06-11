@@ -10,7 +10,7 @@ resource "aws_autoscaling_group" "this" {
   health_check_type         = var.health_check_type
   max_size                  = var.max_size
   min_size                  = var.min_size
-  name                      = format("%s-%s", var.name_asg, var.environment) 
+  name                      = format("%s-%s", var.name_asg, var.environment)
 
   dynamic "mixed_instances_policy" {
     for_each = var.use_mixed_instances_policy ? [var.mixed_instances_policy] : []
