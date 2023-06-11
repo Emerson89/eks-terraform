@@ -1,5 +1,5 @@
 locals {
-  environment = "stg"
+  environment  = "stg"
   cluster_name = "k8s"
 }
 

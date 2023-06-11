@@ -25,8 +25,8 @@ module "eks-node-infra" {
   environment     = local.environment
   create_node     = false
 
-  launch_create = true
-  name          = local.name_lt
+  launch_create         = true
+  name                  = local.name_lt
   instance_types_launch = "t3.micro"
   network_interfaces = [
     {

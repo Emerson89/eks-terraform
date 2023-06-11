@@ -5,6 +5,6 @@ locals {
   tags = {
     Environment = "stg"
   }
-  
+
   cluster_name = "k8s"
 }

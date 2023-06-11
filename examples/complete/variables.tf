@@ -1,3 +1,3 @@
 variable "profile" {}
 
-variable region {}
+variable "region" {}
