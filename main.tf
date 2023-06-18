@@ -64,7 +64,7 @@ module "vpc" {
 ### EKS
 
 module "iam-eks" {
-  source = "github.com/Emerson89/eks-terraform.git//iam-eks?ref=main"
+  source = "../../"
 
   cluster_name = local.cluster_name
   environment  = local.environment
@@ -100,7 +100,7 @@ module "sg-node" {
 }
 
 module "eks-master" {
-  source = "github.com/Emerson89/eks-terraform.git//master?ref=main"
+  source = "../../"
 
   cluster_name              = local.cluster_name
   master-role               = module.iam-eks.master-iam-arn
@@ -132,76 +132,60 @@ module "eks-master" {
   ]
 }
 
+module "nodes" {
+  source = "../../"
+
+  for_each = var.nodes
+
+  cluster_name    = module.eks-master.cluster_name
+  cluster_version = try(module.eks-master.cluster_version, null)
+  node-role       = try(module.iam-eks.node-iam-arn, null)
+  private_subnet  = module.subnet-prd.private_ids
+  node_name       = try(each.value.node_name, null)
+  desired_size    = try(each.value.desired_size, null)
+  max_size        = try(each.value.max_size, null)
+  min_size        = try(each.value.min_size, null)
+  environment     = var.environment
+  instance_types  = try(each.value.instance_types, [])
+  disk_size       = try(each.value.disk_size, null)
+  capacity_type   = try(each.value.capacity_type, "ON_DEMAND")
+  create_node     = try(each.value.create_node, false)
+
+  labels = try(each.value.labels, {})
+  taints = try(each.value.taints, {})
+
+  launch_create         = try(each.value.launch_create, false)
+  name                  = try(each.value.name_lt, null)
+  instance_types_launch = try(each.value.instance_types_launch, "")
+  volume-size           = try(each.value.volume-size, null)
+  volume-type           = try(each.value.volume-type, null)
+  network_interfaces    = try(each.value.network_interfaces, [])
+  tag_specifications    = try(each.value.tag_specifications, [])
+  endpoint              = try(module.eks-master.cluster_endpoint, null)
+  certificate_authority = try(module.eks-master.cluster_cert, null)
+
+  create_fargate       = try(each.value.create_fargate, false)
+  fargate_profile_name = try(each.value.fargate_profile_name, null)
+  selectors            = try(each.value.selectors, [])
+
+  tags = local.tags
+}
+
 module "eks-node-manager" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
 
-  nodes = {
-    infra = {
-      create_node    = true
-      node_name      = "infra"
-      desired_size   = 1
-      max_size       = 2
-      min_size       = 1
-      instance_types = ["t3.medium"]
-      disk_size      = 20
-      labels = {
-        Environment = "prd"
-      }
-      taints = {
-        dedicated = {
-          key    = "environment"
-          value  = "prd"
-          effect = "NO_SCHEDULE"
-        }
-      }
-    }
-    infra-lt = {
-      create_node           = true
-      launch_create         = true
-      node_name             = "infra-lt"
-      name_lt               = "lt"
-      node_name             = "infra-lt"
-      desired_size          = 1
-      max_size              = 2
-      min_size              = 1
-      instance_types_launch = "t3.medium"
-      volume-size           = 20
-      volume-type           = "gp3"
-
-
-      labels = {
-        Environment = "prd"
-      }
-      taints = {
-        dedicated = {
-          key    = "environment"
-          value  = "prd"
-          effect = "NO_SCHEDULE"
-        }
-      }
-    }
-    infra-fargate = {
-      create_node          = false
-      create_fargate       = true
-      fargate_profile_name = "infra-fargate"
-      selectors = [
-        {
-          namespace = "kube-system"
-          labels = {
-            k8s-app = "kube-dns"
-          }
-        },
-        {
-          namespace = "default"
-        }
-      ]
-    }
-  }
   cluster_name    = module.eks-master.cluster_name
   cluster_version = module.eks-master.cluster_version
   node-role       = module.iam-eks.node-iam-arn
   private_subnet  = module.vpc.private_ids
+  node_name       = "manager"
+  desired_size    = 1
+  max_size        = 2
+  min_size        = 1
   environment     = local.environment
+  instance_types  = ["t3.micro"]
+  disk_size       = 30
+  create_node     = true
 
   tags = {
     Environment = local.tags
