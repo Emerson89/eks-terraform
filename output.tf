@@ -46,6 +46,6 @@ output "node-iam-name-profile" {
   value = aws_iam_instance_profile.iam-node-instance-profile-eks.name
 }
 
-output "service_account_name" {
-  value = kubernetes_service_account.service-account[0].metadata.0.name
-}
+# output "service_account_name" {
+#   value = kubernetes_service_account.service-account[0].metadata.0.name
+# }

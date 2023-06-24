@@ -126,8 +126,8 @@ module "eks" {
   create_core    = false
   create_vpc_cni = false
 
-  enable_alb = true
-  addons_alb = {
+  aws-load-balancer-controller = true
+  custom_values_alb = {
     #values = [templatefile("${path.module}/values.yaml", {
     #  aws_region   = "us-east-1"
     #  cluster_name = "${module.eks.cluster_name}"

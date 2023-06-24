@@ -4,7 +4,7 @@ variable "nodes" {
   default     = {}
 }
 
-variable "addons_alb" {
+variable "custom_values_alb" {
   description = "Map of EKS managed node group definitions to create"
   type        = any
   default     = {}
@@ -19,7 +19,7 @@ variable "vpc_id" {
   default = ""
 }
 
-variable "enable_alb" {
+variable "aws-load-balancer-controller" {
   type    = bool
   default = false
 }
