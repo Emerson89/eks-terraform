@@ -4,22 +4,32 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  host                   = module.eks-master.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks-master.cluster_cert)
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_cert)
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
-    args        = ["eks", "get-token", "--cluster-name", module.eks-master.cluster_name, "--profile", var.profile]
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--profile", var.profile]
     command     = "aws"
   }
 }
 
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_cert)
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--profile", var.profile]
+      command     = "aws"
+    }
+  }
+}
 ##
 locals {
-  environment = "stg"
+  environment = "prd"
   tags = {
-    Environment = "stg"
+    Environment = "prd"
   }
-  name_lt      = "lt"
   cluster_name = "k8s"
 }
 
@@ -63,13 +73,11 @@ module "vpc" {
 
 ### EKS
 
-module "iam-eks" {
-  source = "github.com/Emerson89/eks-terraform.git//iam-eks?ref=main"
-
-  cluster_name = local.cluster_name
-  environment  = local.environment
-
-}
+#module "iam-eks" {
+#   source = "github.com/Emerson89/eks-terraform.git//iam-eks?ref=main"
+#   cluster_name = local.cluster_name
+#   environment  = local.environment
+#}
 
 ##SG_EKS
 module "sg-cluster" {
@@ -99,68 +107,92 @@ module "sg-node" {
   tags = local.tags
 }
 
-module "eks-master" {
-  source = "github.com/Emerson89/eks-terraform.git//master?ref=main"
+module "eks" {
+  source = "../../"
 
-  cluster_name              = local.cluster_name
-  master-role               = module.iam-eks.master-iam-arn
-  kubernetes_version        = "1.23"
-  subnet_ids                = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
-  security_group_ids        = [module.sg-cluster.sg_id]
-  enabled_cluster_log_types = ["api", "audit", "authenticator"]
-  environment               = local.environment
-  endpoint_private_access   = true
-  endpoint_public_access    = true
-  addons                    = local.addons
-
+  cluster_name = local.cluster_name
+  #master-role             = module.iam-eks.master-iam-arn
+  kubernetes_version      = "1.23"
+  subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
+  security_group_ids      = [module.sg-cluster.sg_id]
+  environment             = local.environment
+  endpoint_private_access = true
+  endpoint_public_access  = true
+  ##Create aws-auth
   create_aws_auth_configmap = true
   manage_aws_auth_configmap = true
-  node-role                 = module.iam-eks.node-iam-arn
-  mapUsers = [
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxxxxxx:user/user@example.com"
-      username = "user"
-      groups   = ["system:masters"]
+  #node-role                 = module.iam-eks.node-iam-arn
+  create_ebs     = false
+  create_core    = false
+  create_vpc_cni = false
 
-    },
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxxxxxx:user/user2@example.com"
-      username = "user2"
-      groups   = ["system:masters"]
+  enable_alb = true
+  addons_alb = {
+    #values = [templatefile("${path.module}/values.yaml", {
+    #  aws_region   = "us-east-1"
+    #  cluster_name = "${module.eks.cluster_name}"
+    #  name         = "${module.eks.service_account_name}"
+    #})]
+    set = [
+      {
+        name  = "nodeSelector.Environment"
+        value = "prd"
+      },
+      {
+        name  = "vpcId"
+        value = module.vpc.vpc_id
+      },
+      # {
+      #   name  = "tolerations[0].key"
+      #   value = "key1"
+      # },
+      # {
+      #   name  = "tolerations[0].operator"
+      #   value = "Equal"
+      # },
+      # {
+      #   name  = "tolerations[0].value"
+      #   value = "prd"
+      # },
+      # {
+      #   name  = "tolerations[0].effect"
+      #   value = "NoSchedule"
+      # },
 
-    },
-  ]
-}
+    ]
+  }
 
-module "eks-node-manager" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=main"
+  vpc_id = module.vpc.vpc_id
 
   nodes = {
     infra = {
-      create_node    = true
-      node_name      = "infra"
-      desired_size   = 1
-      max_size       = 2
-      min_size       = 1
-      instance_types = ["t3.medium"]
-      disk_size      = 20
+      create_node = true
+      node_name   = "infra"
+      #cluster_name    = "${local.cluster_name}"
+      cluster_version = "1.23"
+      desired_size    = 1
+      max_size        = 2
+      min_size        = 1
+      instance_types  = ["t3.medium"]
+      disk_size       = 20
       labels = {
         Environment = "prd"
       }
-      taints = {
-        dedicated = {
-          key    = "environment"
-          value  = "prd"
-          effect = "NO_SCHEDULE"
-        }
-      }
+      #taints = {
+      #  dedicated = {
+      #    key    = "environment"
+      #    value  = "prd"
+      #    effect = "NO_SCHEDULE"
+      #  }
+      #}
     }
     infra-lt = {
-      create_node           = true
-      launch_create         = true
-      node_name             = "infra-lt"
-      name_lt               = "lt"
-      node_name             = "infra-lt"
+      create_node   = false
+      launch_create = false
+      name_lt       = "lt"
+      node_name     = "infra-lt"
+      #cluster_name          = "${local.cluster_name}"
+      cluster_version       = "1.23"
       desired_size          = 1
       max_size              = 2
       min_size              = 1
@@ -182,8 +214,9 @@ module "eks-node-manager" {
     }
     infra-fargate = {
       create_node          = false
-      create_fargate       = true
+      create_fargate       = false
       fargate_profile_name = "infra-fargate"
+      #cluster_name         = local.cluster_name
       selectors = [
         {
           namespace = "kube-system"
@@ -196,204 +229,62 @@ module "eks-node-manager" {
         }
       ]
     }
-  }
-  cluster_name    = module.eks-master.cluster_name
-  cluster_version = module.eks-master.cluster_version
-  node-role       = module.iam-eks.node-iam-arn
-  private_subnet  = module.vpc.private_ids
-  environment     = local.environment
+    infra-asg = {
+      create_node   = false
+      launch_create = false
+      asg_create    = false
+      #cluster_name          = "${local.cluster_name}"
+      cluster_version       = "1.23"
+      name_lt               = "lt-asg"
+      desired_size          = 1
+      max_size              = 2
+      min_size              = 1
+      instance_types_launch = "t3.medium"
+      volume-size           = 20
+      volume-type           = "gp3"
+      name_asg              = "infra"
+      vpc_zone_identifier   = "${module.vpc.private_ids}"
+      extra_tags = [
+        {
+          key                 = "Environment"
+          value               = "${local.environment}"
+          propagate_at_launch = true
+        },
+        {
+          key                 = "Name"
+          value               = "${local.environment}"
+          propagate_at_launch = true
+        },
+        {
+          key                 = "kubernetes.io/cluster/${local.cluster_name}"
+          value               = "owner"
+          propagate_at_launch = true
+        },
+      ]
 
-  tags = {
-    Environment = local.tags
-  }
 
-}
-
-module "eks-node-manager-launch" {
-  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
-
-  cluster_name    = module.eks-master.cluster_name
-  cluster_version = module.eks-master.cluster_version
-  node-role       = module.iam-eks.node-iam-arn
-  private_subnet  = module.vpc.private_ids
-  node_name       = "manager-node-launch"
-  desired_size    = 1
-  max_size        = 2
-  min_size        = 1
-  environment     = local.environment
-  create_node     = true
-
-  launch_create         = true
-  name                  = local.name_lt
-  instance_types_launch = "t3.micro"
-  volume-size           = 30
-  network_interfaces = [
-    {
-      security_groups = [module.sg-node.sg_id]
+      labels = {
+        Environment = "prd"
+      }
+      taints = {
+        dedicated = {
+          key    = "environment"
+          value  = "prd"
+          effect = "NO_SCHEDULE"
+        }
+      }
     }
-  ]
-  endpoint              = module.eks-master.cluster_endpoint
-  certificate_authority = module.eks-master.cluster_cert
+
+    #endpoint              = module.eks-master.cluster_endpoint
+    #certificate_authority = module.eks-master.cluster_cert
+    #node-role             = module.iam-eks.node-iam-arn
+    #iam_instance_profile  = module.iam-eks.node-iam-name-profile
+
+  }
+
+  private_subnet = module.vpc.private_ids
 
   tags = local.tags
 
 }
 
-module "eks-node-self-manager" {
-  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
-
-  cluster_name    = module.eks-master.cluster_name
-  cluster_version = module.eks-master.cluster_version
-  desired_size    = 1
-  max_size        = 2
-  min_size        = 1
-  environment     = local.environment
-  create_node     = false
-
-  launch_create         = true
-  name                  = local.name_lt
-  instance_types_launch = "t3.micro"
-  volume-size           = 30
-  network_interfaces = [
-    {
-      security_groups = [module.sg-node.sg_id]
-    }
-  ]
-  tag_specifications = [
-    {
-      resource_type = "instance"
-
-      tags = {
-        Name = format("%s-node-%s", local.name_lt, local.environment)
-        Type = "EC2"
-      }
-    },
-    {
-      resource_type = "volume"
-
-      tags = {
-        Name = format("%s-volume-%s", local.name_lt, local.environment)
-        Type = "EBS"
-      }
-    }
-  ]
-  endpoint              = module.eks-master.cluster_endpoint
-  certificate_authority = module.eks-master.cluster_cert
-  iam_instance_profile  = module.iam-eks.node-iam-name-profile
-  taints_lt             = "dedicated=${local.enviroment}:NoSchedule"
-
-  ## ASG
-  vpc_zone_identifier = module.vpc.private_ids
-  asg_create          = true
-  name_asg            = "infra"
-  extra_tags = [
-    {
-      key                 = "Environment"
-      value               = "${local.environment}"
-      propagate_at_launch = true
-    },
-    {
-      key                 = "Name"
-      value               = "${local.environment}"
-      propagate_at_launch = true
-    },
-    {
-      key                 = "kubernetes.io/cluster/${local.cluster_name}"
-      value               = "owner"
-      propagate_at_launch = true
-    },
-  ]
-
-  tags = local.tags
-
-}
-
-module "eks-node-self-manager-spot" {
-  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
-
-  cluster_name    = module.eks-master.cluster_name
-  cluster_version = module.eks-master.cluster_version
-  desired_size    = 1
-  max_size        = 2
-  min_size        = 1
-  environment     = local.environment
-  create_node     = false
-
-  launch_create         = true
-  name                  = local.name_lt
-  instance_types_launch = "t3.micro"
-  volume-size           = 30
-  network_interfaces = [
-    {
-      security_groups = [module.sg-node.sg_id]
-    }
-  ]
-  tag_specifications = [
-    {
-      resource_type = "instance"
-
-      tags = {
-        Name = format("%s-node-%s", local.name_lt, local.environment)
-        Type = "EC2"
-      }
-    },
-    {
-      resource_type = "volume"
-
-      tags = {
-        Name = format("%s-volume-%s", local.name_lt, local.environment)
-        Type = "EBS"
-      }
-    }
-  ]
-  endpoint              = module.eks-master.cluster_endpoint
-  certificate_authority = module.eks-master.cluster_cert
-  iam_instance_profile  = module.iam-eks.node-iam-name-profile
-  taints_lt             = "dedicated=${local.enviroment}:NoSchedule"
-
-  ## ASG
-  vpc_zone_identifier        = module.vpc.private_ids
-  capacity_rebalance         = true
-  default_cooldown           = 300
-  use_mixed_instances_policy = true
-  mixed_instances_policy = {
-    instances_distribution = {
-      on_demand_base_capacity                  = 0
-      on_demand_percentage_above_base_capacity = 0
-      spot_allocation_strategy                 = "price-capacity-optimized"
-      spot_instance_pools                      = 0
-    }
-    override = [
-      {
-        instance_type = "t3.micro"
-      },
-      {
-        instance_type = "t3a.micro"
-      }
-    ]
-
-  }
-
-  termination_policies = ["AllocationStrategy", "OldestLaunchTemplate", "OldestInstance"]
-  name_asg             = "infra-spot"
-  extra_tags = [
-    {
-      key                 = "Environment"
-      value               = "${local.environment}"
-      propagate_at_launch = true
-    },
-    {
-      key                 = "Name"
-      value               = "${local.environment}"
-      propagate_at_launch = true
-    },
-    {
-      key                 = "kubernetes.io/cluster/${local.cluster_name}"
-      value               = "owner"
-      propagate_at_launch = true
-    },
-  ]
-
-  tags = local.tags
-
-}

@@ -1,57 +1,22 @@
-locals {
-
-  addons = {
-    "ebs-csi-controller-sa" = {
-      "name"           = "aws-ebs-csi-driver"
-      "serviceaccount" = "ebs-csi-controller-sa"
-      "policy_arn"     = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-      "version"        = "v1.14.1-eksbuild.1"
-    }
-    "coredns" = {
-      "name"           = "coredns"
-      "serviceaccount" = "aws-node"
-      "policy_arn"     = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-      "version"        = "v1.8.7-eksbuild.3"
-    }
-  }
-
-  public_subnets_tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared",
-    "kubernetes.io/role/elb"                    = 1
-  }
-
-  private_subnets_tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared",
-    "kubernetes.io/role/internal-elb"           = 1
-  }
-
-  ingress_cluster = {
-    "ingress_rule_1" = {
-      "from_port" = "443"
-      "to_port"   = "443"
-      "protocol"  = "tcp"
-    },
-  }
-
-  ingress_node = {
-    "ingress_rule_1" = {
-      "from_port" = "1025"
-      "to_port"   = "65535"
-      "protocol"  = "tcp"
-    },
-    "ingress_rule_2" = {
-      "from_port" = "0"
-      "to_port"   = "65535"
-      "protocol"  = "-1"
-    },
-  }
-
-  ingress_cluster_api = {
-    "ingress_rule_1" = {
-      "from_port"   = "443"
-      "to_port"     = "443"
-      "protocol"    = "tcp"
-      "cidr_blocks" = ["${module.vpc.vpc_cidr}"]
-    },
-  }
+locals { 
+  assume_role_policy_alb = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${replace(data.aws_eks_cluster.this.identity[0].oidc[0].issuer, "https://", "")}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "${replace(data.aws_eks_cluster.this.identity[0].oidc[0].issuer, "https://", "")}:aud": "sts.amazonaws.com",
+                    "${replace(data.aws_eks_cluster.this.identity[0].oidc[0].issuer, "https://", "")}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+                }
+            }
+        }
+    ]
+}
+EOF
 }

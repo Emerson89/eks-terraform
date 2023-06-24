@@ -47,7 +47,7 @@ resource "aws_autoscaling_group" "this" {
     for_each = var.use_mixed_instances_policy ? [] : [1]
 
     content {
-      id      = aws_launch_template.this.id
+      id      = aws_launch_template.this[0].id
       version = var.version_lt
     }
   }

@@ -7,7 +7,7 @@ resource "aws_eks_node_group" "eks_node_group" {
   count = var.create_node ? 1 : 0
 
   cluster_name    = var.cluster_name
-  node_group_name = format("%s-node-group", var.node_name)
+  node_group_name = format("%s-%s-node-group", var.node_name, var.environment)
   node_role_arn   = var.node-role
   instance_types  = var.launch_create ? null : var.instance_types
   disk_size       = var.launch_create ? null : var.disk_size

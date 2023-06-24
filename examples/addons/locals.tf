@@ -3,6 +3,7 @@ locals {
 
   addons = {
     "ebs-csi-controller-sa" = {
+      count = "${var.create_ebs}" ? 1 : 0
       "name"           = "aws-ebs-csi-driver"
       "serviceaccount" = "ebs-csi-controller-sa"
       "policy_arn"     = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"

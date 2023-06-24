@@ -41,9 +41,13 @@ resource "aws_launch_template" "this" {
       subnet_id                   = try(network_interfaces.value.subnet_id, null)
     }
   }
+  
+  dynamic "iam_instance_profile" {
+    for_each = var.launch_create && var.asg_create ? [1] : []
 
-  iam_instance_profile {
-    name = var.iam_instance_profile
+    content {
+     name = var.iam_instance_profile
+    }
   }
 
   image_id      = data.aws_ami.eks-worker[0].id
