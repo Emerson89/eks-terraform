@@ -4,24 +4,40 @@ variable "nodes" {
   default     = {}
 }
 
+variable "custom_helm" {
+  type    = map(any)
+  default = {}
+}
+
 variable "custom_values_alb" {
   description = "Map of EKS managed node group definitions to create"
   type        = any
   default     = {}
 }
 
+variable "aws-load-balancer-controller" {
+  type    = bool
+  default = false
+}
+
+variable "custom_values_asg" {
+  description = "Map of EKS managed node group definitions to create"
+  type        = any
+  default     = {}
+}
+
+variable "aws-autoscaler-controller" {
+  type    = bool
+  default = false
+}
+
 variable "profile" {
   default = ""
-  
+
 }
 
 variable "vpc_id" {
   default = ""
-}
-
-variable "aws-load-balancer-controller" {
-  type    = bool
-  default = false
 }
 
 variable "node-iam-arn" {

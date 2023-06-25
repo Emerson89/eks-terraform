@@ -1,4 +1,4 @@
-locals { 
+locals {
   assume_role_policy_alb = <<EOF
 {
     "Version": "2012-10-17",

@@ -122,10 +122,13 @@ module "eks" {
   create_aws_auth_configmap = true
   manage_aws_auth_configmap = true
   #node-role                 = module.iam-eks.node-iam-arn
+
+  ##addons
   create_ebs     = false
   create_core    = false
   create_vpc_cni = false
 
+  aws-autoscaler-controller    = true
   aws-load-balancer-controller = true
   custom_values_alb = {
     #values = [templatefile("${path.module}/values.yaml", {
@@ -162,8 +165,34 @@ module "eks" {
     ]
   }
 
-  vpc_id = module.vpc.vpc_id
+  #vpc_id = module.vpc.vpc_id
+  
+  ## CUSTOM_HELM
 
+  custom_helm = {
+    aws-secrets-manager = {
+      "name"             = "aws-secrets-manager"
+      "namespace"        = "kube-system"
+      "repository"       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+      "chart"            = "secrets-store-csi-driver-provider-aws"
+      "version"          = "" ## When empty, the latest version will be installed
+      "create_namespace" = false
+
+      "values" = [] ## When empty, default values will be used
+    }
+    external-dns = {
+      "name"             = "external-dns"
+      "namespace"        = "kube-system"
+      "repository"       = "https://kubernetes-sigs.github.io/external-dns/"
+      "chart"            = "external-dns"
+      "version"          = "" ## When empty, the latest version will be installed
+      "create_namespace" = false
+      
+      "values" = []
+    }
+  }
+
+  ## NODES
   nodes = {
     infra = {
       create_node = true

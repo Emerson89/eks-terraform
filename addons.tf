@@ -32,7 +32,7 @@ module "core" {
       "policy_arn"     = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
     }
   }
-  
+
 }
 
 module "vpc-cni" {

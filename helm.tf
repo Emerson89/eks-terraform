@@ -1,5 +1,6 @@
 locals {
   name_alb = "aws-load-balancer-controller"
+  name_asg = "cluster-autoscaler"
 }
 
 data "aws_region" "current" {}
@@ -53,14 +54,14 @@ data "aws_caller_identity" "current" {}
 
 module "iam" {
   source = "./modules/iam"
-  
+
   count = var.aws-load-balancer-controller ? 1 : 0
 
   iam_roles = {
-    "aws-load-balancer-controller" = {
+    "aws-load-balancer-controller-${var.environment}" = {
       "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
-      "serviceaccount" = "aws-load-balancer-controller"
+      "serviceaccount" = "aws-load-balancer-controller-${var.environment}"
       "policy"         = file("${path.module}/templates/policy-alb.json")
     }
   }
@@ -81,7 +82,7 @@ module "alb" {
     values = try(var.custom_values_alb["values"], [templatefile("${path.module}/templates/values-alb.yaml", {
       aws_region   = "${data.aws_region.current.name}"
       cluster_name = "${aws_eks_cluster.eks_cluster.name}"
-      name         = "aws-load-balancer-controller"
+      name         = "aws-load-balancer-controller-${var.environment}"
     })])
 
   }
@@ -91,5 +92,75 @@ module "alb" {
   # depends_on = [
   #   kubernetes_service_account.service-account
   # ]
+
+}
+
+
+## ASG
+
+module "iam-asg" {
+  source = "./modules/iam"
+
+  count = var.aws-autoscaler-controller ? 1 : 0
+
+  iam_roles = {
+    "cluster-autoscaler-${var.environment}" = {
+      "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
+      "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
+      "serviceaccount" = "cluster-autoscaler-${var.environment}"
+      "policy" = templatefile("${path.module}/templates/policy-asg.json", {
+        cluster_name = "${aws_eks_cluster.eks_cluster.name}"
+      })
+    }
+  }
+}
+
+module "asg" {
+  source = "./modules/helm"
+
+  count = var.aws-autoscaler-controller ? 1 : 0
+
+  helm_release = {
+
+    name       = try(var.custom_values_asg["name"], local.name_asg)
+    namespace  = try(var.custom_values_asg["namespace"], "kube-system")
+    repository = "https://kubernetes.github.io/autoscaler"
+    chart      = "cluster-autoscaler"
+
+    values = try(var.custom_values_asg["values"], [templatefile("${path.module}/templates/values-asg.yaml", {
+      aws_region   = "${data.aws_region.current.name}"
+      cluster_name = "${aws_eks_cluster.eks_cluster.name}"
+      name         = "cluster-autoscaler-${var.environment}"
+      version_k8s  = "${aws_eks_cluster.eks_cluster.version}"
+    })])
+
+  }
+
+  set = try(var.custom_values_asg["set"], {})
+
+  # depends_on = [
+  #   kubernetes_service_account.service-account
+  # ]
+
+}
+
+module "custom" {
+  source = "./modules/helm"
+
+  for_each = var.custom_helm
+
+  helm_release = {
+
+    name       = try(each.value.name, "")
+    namespace  = try(each.value.namespace, "")
+    repository = try(each.value.repository, "")
+    version    = try(each.value.version, "")
+    chart      = try(each.value.chart, "")
+
+    values = try(each.value.values, [])
+
+  }
+
+  set = try(each.value.set, {})
 
 }
