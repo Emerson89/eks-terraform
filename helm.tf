@@ -1,58 +1,74 @@
 locals {
-  name_alb = "aws-load-balancer-controller"
-  name_asg = "cluster-autoscaler"
+  name_alb            = "aws-load-balancer-controller"
+  name_asg            = "cluster-autoscaler"
+  name_external-dns   = "external-dns"
+  name_metrics-server = "metrics-server"
+  name_ebs            = "aws-ebs-csi-driver"
+}
+
+provider "kubernetes" {
+  host                   = aws_eks_cluster.eks_cluster.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.eks_cluster.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.this.token
+
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = aws_eks_cluster.eks_cluster.endpoint
+    cluster_ca_certificate = base64decode(aws_eks_cluster.eks_cluster.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.this.token
+
+  }
 }
 
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
-#data "aws_vpc" "selected" {
-#  count = var.aws-load-balancer-controller ? 1 : 0
-#
-#  id = try(var.vpc_id, "")
-#}
+## EBS
 
-# resource "aws_iam_role" "this" {
-#   count = var.aws-load-balancer-controller ? 1 : 0
+module "iam-ebs" {
+  source = "./modules/iam"
 
-#   name = local.name_alb
+  count = var.aws-ebs-csi-driver ? 1 : 0
 
-#   assume_role_policy = local.assume_role_policy_alb
+  iam_roles = {
+    "aws-ebs-csi-driver-${var.environment}" = {
+      "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
+      "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
+      "serviceaccount" = "aws-ebs-csi-driver-${var.environment}"
+      "policy"         = file("${path.module}/templates/policy-ebs.json")
+    }
+  }
+}
 
-#   lifecycle {
-#     create_before_destroy = true
-#   }
-# }
+module "ebs-helm" {
+  source = "./modules/helm"
 
-# resource "aws_iam_role_policy" "this" {
-#   count = var.aws-load-balancer-controller ? 1 : 0
+  count = var.aws-ebs-csi-driver ? 1 : 0
 
-#   name = local.name_alb
-#   role = aws_iam_role.this[0].id
+  helm_release = {
 
-#   policy = file("${path.module}/templates/policy-alb.json")
+    name       = try(var.custom_values_ebs["name"], local.name_ebs)
+    namespace  = try(var.custom_values_ebs["namespace"], "kube-system")
+    repository = "https://kubernetes-sigs.github.io/aws-ebs-csi-driver"
+    chart      = "aws-ebs-csi-driver"
 
-# }
+    values = try(var.custom_values_ebs["values"], [templatefile("${path.module}/templates/values-ebs.yaml", {
+      aws_region   = "${data.aws_region.current.name}"
+      cluster_name = "${aws_eks_cluster.eks_cluster.name}"
+      name         = "aws-ebs-csi-driver-${var.environment}"
+    })])
 
-# resource "kubernetes_service_account" "service-account" {
-#   count = var.aws-load-balancer-controller ? 1 : 0
+  }
 
-#   metadata {
-#     name      = "aws-load-balancer-controller"
-#     namespace = "kube-system"
-#     labels = {
-#       "app.kubernetes.io/name"      = "aws-load-balancer-controller"
-#       "app.kubernetes.io/component" = "controller"
-#     }
-#     annotations = {
-#       "eks.amazonaws.com/role-arn"               = "${module.iam.arn}"
-#       "eks.amazonaws.com/sts-regional-endpoints" = "true"
-#     }
-#   }
-# }
+  set = try(var.custom_values_ebs["set"], {})
 
-module "iam" {
+}
+
+## ALB
+module "iam-alb" {
   source = "./modules/iam"
 
   count = var.aws-load-balancer-controller ? 1 : 0
@@ -88,10 +104,6 @@ module "alb" {
   }
 
   set = try(var.custom_values_alb["set"], {})
-
-  # depends_on = [
-  #   kubernetes_service_account.service-account
-  # ]
 
 }
 
@@ -138,11 +150,61 @@ module "asg" {
 
   set = try(var.custom_values_asg["set"], {})
 
-  # depends_on = [
-  #   kubernetes_service_account.service-account
-  # ]
+}
+
+
+## ExternalDNS
+
+module "external-dns" {
+  source = "./modules/helm"
+
+  count = var.aws-external-dns ? 1 : 0
+
+  helm_release = {
+
+    name       = try(var.custom_values_external-dns["name"], local.name_external-dns)
+    namespace  = try(var.custom_values_external-dns["namespace"], "kube-system")
+    repository = "https://kubernetes-sigs.github.io/external-dns/"
+    chart      = "external-dns"
+
+    values = try(var.custom_values_external-dns["values"], [templatefile("${path.module}/templates/values-external.yaml", {
+      domain = "${var.domain}"
+      }
+    )])
+
+  }
+
+  set = try(var.custom_values_external-dns["set"], {})
 
 }
+
+## Metrics Server
+
+module "metrics-server" {
+  source = "./modules/helm"
+
+  count = var.metrics-server ? 1 : 0
+
+  helm_release = {
+
+    name       = try(var.custom_values_metrics-server["name"], local.name_metrics-server)
+    namespace  = try(var.custom_values_metrics-server["namespace"], "kube-system")
+    repository = "https://kubernetes-sigs.github.io/metrics-server/"
+    chart      = "metrics-server"
+
+    values = try(var.custom_values_metrics-server["values"], [templatefile("${path.module}/templates/values-ebs.yaml", {
+      aws_region   = "${data.aws_region.current.name}"
+      cluster_name = "${aws_eks_cluster.eks_cluster.name}"
+      name         = "aws-load-balancer-controller-${var.environment}"
+    })])
+
+  }
+
+  set = try(var.custom_values_metrics-server["set"], {})
+
+}
+
+## CUSTOM
 
 module "custom" {
   source = "./modules/helm"

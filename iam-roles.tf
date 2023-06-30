@@ -52,7 +52,7 @@ resource "aws_iam_role" "master" {
 
 resource "aws_iam_policy" "amazon_eks_node_group_autoscaler_policy" {
 
-  name        = format("amazon_eks_node_group_autoscaler_policy-%s", var.cluster_name)
+  name        = format("amazon_eks_node_group_autoscaler_policy-%s-%s", var.cluster_name, var.environment)
   path        = "/"
   description = "IAM Policy for EKS Node groups allowing to AutoScaling"
 
@@ -78,8 +78,47 @@ resource "aws_iam_policy" "amazon_eks_node_group_autoscaler_policy" {
   EOF
 }
 
+resource "aws_iam_policy" "route53" {
+
+  name        = format("route53-%s-%s", var.cluster_name, var.environment)
+  path        = "/"
+  description = "IAM Policy for EKS Node groups allowing to route53"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:ChangeResourceRecordSets"
+            ],
+            "Resource": [
+                "arn:aws:route53:::hostedzone/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:ListHostedZones",
+                "route53:ListResourceRecordSets"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
+  EOF
+}
+
+resource "aws_iam_role_policy_attachment" "route53_attachment" {
+  policy_arn = aws_iam_policy.route53.arn
+  role       = aws_iam_role.node.name
+}
+
 resource "aws_iam_role_policy_attachment" "eks_nodes_autoscaler_attachment" {
-  policy_arn = aws_iam_policy.amazon_eks_node_group_autoscaler_policy.arn # Managed by Amazon
+  policy_arn = aws_iam_policy.amazon_eks_node_group_autoscaler_policy.arn
   role       = aws_iam_role.node.name
 }
 

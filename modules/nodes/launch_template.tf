@@ -1,5 +1,6 @@
 locals {
-  labels_lt = "eks.amazonaws.com/nodegroup=${var.name_asg}"
+  labels_lt = try("eks.amazonaws.com/nodegroup=${var.name_asg}", "")
+  taints_lt = try(var.taints_lt, "")
 }
 
 data "aws_ami" "eks-worker" {
@@ -62,9 +63,9 @@ resource "aws_launch_template" "this" {
   #!/bin/bash
     
   if [ ${var.use-max-pods} = true ]; then
-    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --use-max-pods=${var.use-max-pods}  --kubelet-extra-args '--max-pods=${var.max-pods} --register-with-taints=${var.taints_lt} --node-labels=${local.labels_lt}'
+    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --use-max-pods=${var.use-max-pods}  --kubelet-extra-args '--max-pods=${var.max-pods} --register-with-taints=${local.taints_lt} --node-labels=${local.labels_lt}'
   else
-    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --kubelet-extra-args '--register-with-taints=${var.taints_lt} --node-labels=${local.labels_lt}'
+    /etc/eks/bootstrap.sh ${var.cluster_name} --b64-cluster-ca ${var.certificate_authority} --apiserver-endpoint ${var.endpoint} --kubelet-extra-args '--register-with-taints=${local.taints_lt} --node-labels=${local.labels_lt}'
   fi
   --//--
   EOT

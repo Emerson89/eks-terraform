@@ -2,6 +2,10 @@ data "aws_eks_cluster" "this" {
   name = aws_eks_cluster.eks_cluster.name
 }
 
+data "aws_eks_cluster_auth" "this" {
+  name = aws_eks_cluster.eks_cluster.name
+}
+
 resource "aws_cloudwatch_log_group" "this" {
   # The log group name format is /aws/eks/<cluster-name>/cluster
   # Reference: https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html

@@ -1,7 +1,7 @@
     replicaCount: 1
 
     image: 
-      repository: 602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller
+      repository: 602401143452.dkr.ecr.${aws_region}.amazonaws.com/amazon/aws-load-balancer-controller
       tag: v2.4.6
       pullPolicy: IfNotPresent
      

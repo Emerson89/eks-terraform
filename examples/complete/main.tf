@@ -3,27 +3,27 @@ provider "aws" {
   region  = var.region
 }
 
-provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_cert)
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--profile", var.profile]
-    command     = "aws"
-  }
-}
+# provider "kubernetes" {
+#   host                   = module.eks.cluster_endpoint
+#   cluster_ca_certificate = base64decode(module.eks.cluster_cert)
+#   exec {
+#     api_version = "client.authentication.k8s.io/v1beta1"
+#     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--profile", var.profile]
+#     command     = "aws"
+#   }
+# }
 
-provider "helm" {
-  kubernetes {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_cert)
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--profile", var.profile]
-      command     = "aws"
-    }
-  }
-}
+# provider "helm" {
+#   kubernetes {
+#     host                   = module.eks.cluster_endpoint
+#     cluster_ca_certificate = base64decode(module.eks.cluster_cert)
+#     exec {
+#       api_version = "client.authentication.k8s.io/v1beta1"
+#       args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--profile", var.profile]
+#       command     = "aws"
+#     }
+#   }
+# }
 ##
 locals {
   environment = "prd"
@@ -86,9 +86,9 @@ module "sg-cluster" {
   sgname                   = "sgcluster"
   environment              = local.environment
   vpc_id                   = module.vpc.vpc_id
-  source_security_group_id = module.sg-node.sg_id
+  #source_security_group_id = module.sg-node.sg_id
 
-  ingress_with_source_security_group = local.ingress_cluster
+  #ingress_with_source_security_group = local.ingress_cluster
   ingress_with_cidr_blocks           = local.ingress_cluster_api
 
   tags = local.tags
@@ -119,17 +119,34 @@ module "eks" {
   endpoint_private_access = true
   endpoint_public_access  = true
   ##Create aws-auth
-  create_aws_auth_configmap = true
-  manage_aws_auth_configmap = true
+  create_aws_auth_configmap = false
+  manage_aws_auth_configmap = false
   #node-role                 = module.iam-eks.node-iam-arn
 
+  # mapRoles = [
+  #   {
+  #     rolearn  = "arn:aws:iam::740561009084:role/AWSReservedSSO_DevNew_291264192c35384b"
+  #     username = "AWSReservedSSO_DevNew_291264192c35384b"
+  #     groups   = ["devreadnew"]
+  #   },
+  #   {
+  #     rolearn  = "arn:aws:iam::740561009084:role/AWSReservedSSO_DevMasterNew_46d20e0c5acbbecb"
+  #     username = "AWSReservedSSO_DevMasterNew_46d20e0c5acbbecb"
+  #     groups   = ["devmasternew"]
+
+  #   },
+  # ]
   ##addons
   create_ebs     = false
   create_core    = false
   create_vpc_cni = false
 
-  aws-autoscaler-controller    = true
-  aws-load-balancer-controller = true
+  aws-ebs-csi-driver = true
+  aws-external-dns   = false
+  domain             = "domain.io"
+
+  aws-autoscaler-controller    = false
+  aws-load-balancer-controller = false
   custom_values_alb = {
     #values = [templatefile("${path.module}/values.yaml", {
     #  aws_region   = "us-east-1"
@@ -166,31 +183,21 @@ module "eks" {
   }
 
   #vpc_id = module.vpc.vpc_id
-  
+
   ## CUSTOM_HELM
 
-  custom_helm = {
-    aws-secrets-manager = {
-      "name"             = "aws-secrets-manager"
-      "namespace"        = "kube-system"
-      "repository"       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
-      "chart"            = "secrets-store-csi-driver-provider-aws"
-      "version"          = "" ## When empty, the latest version will be installed
-      "create_namespace" = false
+  # custom_helm = {
+  #   aws-secrets-manager = {
+  #     "name"             = "aws-secrets-manager"
+  #     "namespace"        = "kube-system"
+  #     "repository"       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+  #     "chart"            = "secrets-store-csi-driver-provider-aws"
+  #     "version"          = "" ## When empty, the latest version will be installed
+  #     "create_namespace" = false
 
-      "values" = [] ## When empty, default values will be used
-    }
-    external-dns = {
-      "name"             = "external-dns"
-      "namespace"        = "kube-system"
-      "repository"       = "https://kubernetes-sigs.github.io/external-dns/"
-      "chart"            = "external-dns"
-      "version"          = "" ## When empty, the latest version will be installed
-      "create_namespace" = false
-      
-      "values" = []
-    }
-  }
+  #     "values" = [] ## When empty, default values will be used
+  #   }
+  # }
 
   ## NODES
   nodes = {

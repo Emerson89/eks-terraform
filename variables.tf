@@ -9,13 +9,33 @@ variable "custom_helm" {
   default = {}
 }
 
+variable "domain" {
+  default = ""
+}
+
 variable "custom_values_alb" {
   description = "Map of EKS managed node group definitions to create"
   type        = any
   default     = {}
 }
 
+variable "custom_values_ebs" {
+  description = "Map of EKS managed node group definitions to create"
+  type        = any
+  default     = {}
+}
+
+variable "aws-ebs-csi-driver" {
+  type    = bool
+  default = false
+}
+
 variable "aws-load-balancer-controller" {
+  type    = bool
+  default = false
+}
+
+variable "aws-external-dns" {
   type    = bool
   default = false
 }
@@ -24,6 +44,23 @@ variable "custom_values_asg" {
   description = "Map of EKS managed node group definitions to create"
   type        = any
   default     = {}
+}
+
+variable "custom_values_external-dns" {
+  description = "Map of EKS managed node group definitions to create"
+  type        = any
+  default     = {}
+}
+
+variable "custom_values_metrics-server" {
+  description = "Map of EKS managed node group definitions to create"
+  type        = any
+  default     = {}
+}
+
+variable "metrics-server" {
+  type    = bool
+  default = false
 }
 
 variable "aws-autoscaler-controller" {
@@ -160,6 +197,11 @@ variable "subnet_ids" {
 variable "addons" {
   type    = map(any)
   default = {}
+}
+
+variable "cluster_role" {
+  type    = list(any)
+  default = []
 }
 
 variable "enabled_cluster_log_types" {
