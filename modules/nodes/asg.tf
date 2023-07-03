@@ -30,7 +30,7 @@ resource "aws_autoscaling_group" "this" {
       launch_template {
         launch_template_specification {
           launch_template_id = aws_launch_template.this[0].id
-          version            = var.version_lt
+          version            = local.launch_template_version
         }
 
         dynamic "override" {
@@ -48,12 +48,12 @@ resource "aws_autoscaling_group" "this" {
 
     content {
       id      = aws_launch_template.this[0].id
-      version = var.version_lt
+      version = local.launch_template_version
     }
   }
 
   dynamic "tag" {
-    for_each = var.extra_tags
+    for_each = var.asg_tags
 
     content {
       key                 = tag.value.key

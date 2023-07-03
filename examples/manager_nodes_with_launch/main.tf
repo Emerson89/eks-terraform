@@ -1,20 +1,12 @@
-provider "aws" {
-  profile = var.profile
-  region  = var.region
-}
-
-provider "kubernetes" {
-  host                   = var.cluster_endpoint
-  cluster_ca_certificate = base64decode(var.cluster_ca_cert)
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    args        = ["eks", "get-token", "--cluster-name", local.cluster_name, "--profile", var.profile]
-    command     = "aws"
+locals {
+  environment = "stg"
+  tags = {
+    Environment = "stg"
   }
 }
 
 module "eks-node-infra" {
-  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git//modules//nodes?ref=main"
 
   cluster_name    = "k8s"
   cluster_version = "1.23"

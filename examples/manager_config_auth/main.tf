@@ -1,33 +1,24 @@
-provider "aws" {
-  profile = var.profile
-  region  = var.region
+data "aws_eks_cluster" "this" {
+  name = "eks_cluster_name"
+}
+
+data "aws_eks_cluster_auth" "this" {
+  name = "eks_cluster_name"
 }
 
 provider "kubernetes" {
-  host                   = var.cluster_endpoint
-  cluster_ca_certificate = base64decode(var.cluster_ca_cert)
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    args        = ["eks", "get-token", "--cluster-name", local.cluster_name, "--profile", var.profile]
-    command     = "aws"
-  }
+  host                   = data.aws_eks_cluster.this.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.this.token
 }
+
 
 ## EKS
 
-module "iam-eks" {
-  source = "github.com/Emerson89/eks-terraform.git//iam-eks?ref=main"
-
-  cluster_name = local.cluster_name
-  environment  = local.environment
-
-}
-
 module "eks-master" {
-  source = "github.com/Emerson89/eks-terraform.git//master?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git?ref=main"
 
   cluster_name            = local.cluster_name
-  master-role             = module.iam-eks.master-iam-arn
   kubernetes_version      = "1.23"
   subnet_ids              = ["subnet-abcabcabc", "subnet-abcabcabc", "subnet-abdcabcd"]
   security_group_ids      = ["sg-abcdabcdabcd"]
@@ -37,20 +28,77 @@ module "eks-master" {
 
   create_aws_auth_configmap = true
   manage_aws_auth_configmap = true
-  node-role                 = module.iam-eks.node-iam-arn
+  mapRoles = [
+    {
+      rolearn  = "arn:aws:iam::xxxxxxxxxxxx:role/role-access"
+      username = "role-access"
+      groups   = ["read-only"] ## Group criado rbac
+    }
+  ]
   mapUsers = [
     {
-      userarn  = "arn:aws:iam::xxxxxxxxxxxxxx:user/user@example.com"
-      username = "user"
-      groups   = ["system:masters"]
+      userarn  = "arn:aws:iam::xxxxxxxxxxxx:user/test"
+      username = "test"
+      groups   = ["Admin"] ## Group criado rbac
 
-    },
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxxxxxx:user/user2@example.com"
-      username = "user2"
-      groups   = ["system:masters"]
-
-    },
+    }
   ]
 }
 
+module "rbac" {
+  source = "github.com/Emerson89/eks-terraform.git//modules//rbac?ref=main"
+
+  rbac = {
+    admin = {
+      metadata = [{
+        name = "admin-cluster-role"
+        labels = {
+          "kubernetes.io/bootstrapping" : "rbac-defaults"
+        }
+        annotations = {
+          "rbac.authorization.kubernetes.io/autoupdate" : true
+        }
+      }]
+      rules = [{
+        api_groups = ["*"]
+        verbs      = ["*"]
+        resources  = ["*"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "Admin"
+      }]
+    }
+    read-only = {
+      metadata = [{
+        name = "read-only"
+      }]
+      rules = [{
+        api_groups = [""]
+        resources  = ["namespaces", "pods"]
+        verbs      = ["get", "list", "watch"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "read-only"
+      }]
+    }
+    ServiceAccount = {
+      service-account-create = true
+      metadata = [{
+        name = "svcaccount"
+      }]
+      rules = [{
+        api_groups = [""]
+        resources  = ["namespaces", "pods"]
+        verbs      = ["get", "list", "watch"]
+      }]
+      subjects = [{
+        kind      = "ServiceAccount"
+        name      = "svcaccount"
+        namespace = "kube-system"
+      }]
+    }
+  }
+
+}

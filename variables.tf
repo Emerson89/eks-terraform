@@ -1,108 +1,91 @@
+variable "rbac" {
+  description = "Map rbac configuration"
+  type        = any
+  default     = {}
+}
+
 variable "nodes" {
-  description = "Map of EKS managed node group definitions to create"
+  description = "Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
   default     = {}
 }
 
 variable "custom_helm" {
-  type    = map(any)
-  default = {}
+  description = "Custom a Release is an instance of a chart running in a Kubernetes cluster."
+  type        = map(any)
+  default     = {}
 }
 
 variable "domain" {
-  default = ""
+  description = "Domain used helm External dns"
+  type        = string
+  default     = ""
 }
 
 variable "custom_values_alb" {
-  description = "Map of EKS managed node group definitions to create"
+  description = "Custom controler alb a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
   default     = {}
 }
 
 variable "custom_values_ebs" {
-  description = "Map of EKS managed node group definitions to create"
+  description = "Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
   default     = {}
 }
 
 variable "aws-ebs-csi-driver" {
-  type    = bool
-  default = false
+  description = "Install release helm controller ebs"
+  type        = bool
+  default     = false
 }
 
 variable "aws-load-balancer-controller" {
-  type    = bool
-  default = false
+  description = "Install release helm controller alb"
+  type        = bool
+  default     = false
 }
 
-variable "aws-external-dns" {
-  type    = bool
-  default = false
+variable "external-dns" {
+  description = "Install release helm external"
+  type        = bool
+  default     = false
 }
 
 variable "custom_values_asg" {
-  description = "Map of EKS managed node group definitions to create"
+  description = "Custom controller asg a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
   default     = {}
 }
 
 variable "custom_values_external-dns" {
-  description = "Map of EKS managed node group definitions to create"
+  description = "Custom external-dns a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
   default     = {}
 }
 
 variable "custom_values_metrics-server" {
-  description = "Map of EKS managed node group definitions to create"
+  description = "Custom metrics-server a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
   default     = {}
 }
 
 variable "metrics-server" {
-  type    = bool
-  default = false
+  description = "Install release helm metrics-server"
+  type        = bool
+  default     = false
 }
 
 variable "aws-autoscaler-controller" {
-  type    = bool
-  default = false
-}
-
-variable "profile" {
-  default = ""
-
-}
-
-variable "vpc_id" {
-  default = ""
-}
-
-variable "node-iam-arn" {
-  default = ""
-}
-
-variable "cluster_endpoint" {
-  default = ""
-}
-
-variable "cluster_version" {
-  default = ""
-}
-
-variable "cluster_cert" {
-  default = ""
-}
-
-variable "fargate_profile_name" {
-  default = ""
-}
-
-variable "iam-name-profile" {
-  default = ""
+  description = "Install release helm controller asg"
+  type        = bool
+  default     = false
 }
 
 variable "private_subnet" {
-  default = []
+  description = "List subnet nodes"
+  type        = list(any)
+  default     = []
 }
 ## Clusters
 
@@ -194,11 +177,6 @@ variable "subnet_ids" {
   default     = []
 }
 
-variable "addons" {
-  type    = map(any)
-  default = {}
-}
-
 variable "cluster_role" {
   type    = list(any)
   default = []
@@ -211,17 +189,25 @@ variable "enabled_cluster_log_types" {
 }
 
 variable "create_ebs" {
-  default = false
+  description = "Install addons ebs"
+  type        = bool
+  default     = false
 }
 
 variable "create_core" {
-  default = false
+  description = "Install addons core"
+  type        = bool
+  default     = false
 }
 
 variable "create_vpc_cni" {
-  default = false
+  description = "Install addons vpc_cni"
+  type        = bool
+  default     = false
 }
 
 variable "create_proxy" {
-  default = false
+  description = "Install addons proxy"
+  type        = bool
+  default     = false
 }

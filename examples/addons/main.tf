@@ -1,14 +1,21 @@
-module "eks-master" {
-  source = "github.com/Emerson89/modules-terraform.git//eks//master?ref=main"
+module "eks-addons" {
+  source = "github.com/Emerson89/eks-terraform.git//modules//addons?ref=main"
 
-  cluster_name            = "k8s"
-  master-role             = "arn-abcdabcdabcd"
-  kubernetes_version      = "1.23"
-  subnet_ids              = ["subnet-abcabcabc", "subnet-abcabcabc", "subnet-abdcabcd"]
-  security_group_ids      = ["sg-abcdabcdabcd"]
-  environment             = local.environment
-  endpoint_private_access = "true"
-  endpoint_public_access  = "true"
-  addons                  = local.addons
+  eks_cluster_id  = "eks_cluster-id"
+  openid_connect  = "aws_iam_openid_connect_provider-arn"
+  openid_url      = "aws_iam_openid_connect_provider-url"
+  cluster_version = "eks_cluster-version"
 
+  addons = {
+    "coredns" = {
+      "name"           = "coredns"
+      "serviceaccount" = "aws-node"
+      "policy_arn"     = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+    }
+    "vpc-cni" = {
+      "name"           = "vpc-cni"
+      "serviceaccount" = "aws-node"
+      "policy_arn"     = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+    }
+  }
 }

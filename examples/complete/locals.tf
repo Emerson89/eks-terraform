@@ -1,20 +1,5 @@
 locals {
 
-  addons = {
-    "ebs-csi-controller-sa" = {
-      "name"           = "aws-ebs-csi-driver"
-      "serviceaccount" = "ebs-csi-controller-sa"
-      "policy_arn"     = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-      "version"        = "v1.14.1-eksbuild.1"
-    }
-    "coredns" = {
-      "name"           = "coredns"
-      "serviceaccount" = "aws-node"
-      "policy_arn"     = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-      "version"        = "v1.8.7-eksbuild.3"
-    }
-  }
-
   public_subnets_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared",
     "kubernetes.io/role/elb"                      = 1

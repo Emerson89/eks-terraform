@@ -1,6 +1,6 @@
 variable "max-pods" {
   type    = number
-  default = "17"
+  default = 17
 }
 
 variable "use-max-pods" {
@@ -11,7 +11,15 @@ variable "use-max-pods" {
 variable "taints_lt" {
   description = "Taints to be applied to the launch template"
   type        = string
-  default     = ""
+  #--register-with-taints="dedicated=${local.environment}:NoSchedule"
+  default = ""
+}
+
+variable "labels_lt" {
+  description = "Labels to be applied to the launch template"
+  type        = string
+  #--node-labels="eks.amazonaws.com/nodegroup=${var.name_asg}"
+  default = ""
 }
 
 variable "taints" {
@@ -194,13 +202,6 @@ variable "selectors" {
 
 
 ## ASG
-
-variable "version_lt" {
-  description = "Template version. Can be version number, $Latest, or $Default"
-  type        = string
-  default     = "$Latest"
-}
-
 variable "health_check_type" {
   description = "EC2 or ELB. Controls how health checking is done."
   type        = string
@@ -237,7 +238,7 @@ variable "load_balancers" {
   default     = []
 }
 
-variable "extra_tags" {
+variable "asg_tags" {
   description = "Configuration block(s) containing resource tags"
   type        = any
   default     = []

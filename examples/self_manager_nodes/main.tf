@@ -1,20 +1,5 @@
-provider "aws" {
-  profile = var.profile
-  region  = var.region
-}
-
-provider "kubernetes" {
-  host                   = var.cluster_endpoint
-  cluster_ca_certificate = base64decode(var.cluster_ca_cert)
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    args        = ["eks", "get-token", "--cluster-name", local.cluster_name, "--profile", var.profile]
-    command     = "aws"
-  }
-}
-
 module "eks-node-infra" {
-  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git//modules//nodes?ref=main"
 
   cluster_name    = "k8s"
   cluster_version = "1.23"
@@ -55,13 +40,16 @@ module "eks-node-infra" {
   endpoint              = var.cluster_endpoint
   certificate_authority = var.cluster_ca_cert
   iam_instance_profile  = "arn-abcbdabcdbabc"
-  taints_lt             = "dedicated=${local.environment}:NoSchedule"
+  ##Taint
+  taint_lt = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+  ##Labels
+  labels_lt = "--node-labels=eks.amazonaws.com/nodegroup=infra"
 
   ## ASG
   vpc_zone_identifier = ["subnet-abcabcabc", "subnet-abcabcabc", "subnet-abdcabcd"]
   asg_create          = true
   name_asg            = "infra"
-  extra_tags = [
+  asg_tags = [
     {
       key                 = "Environment"
       value               = "${local.environment}"

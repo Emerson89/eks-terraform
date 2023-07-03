@@ -158,7 +158,7 @@ module "asg" {
 module "external-dns" {
   source = "./modules/helm"
 
-  count = var.aws-external-dns ? 1 : 0
+  count = var.external-dns ? 1 : 0
 
   helm_release = {
 
@@ -192,11 +192,7 @@ module "metrics-server" {
     repository = "https://kubernetes-sigs.github.io/metrics-server/"
     chart      = "metrics-server"
 
-    values = try(var.custom_values_metrics-server["values"], [templatefile("${path.module}/templates/values-ebs.yaml", {
-      aws_region   = "${data.aws_region.current.name}"
-      cluster_name = "${aws_eks_cluster.eks_cluster.name}"
-      name         = "aws-load-balancer-controller-${var.environment}"
-    })])
+    values = try(var.custom_values_metrics-server["values"], [])
 
   }
 

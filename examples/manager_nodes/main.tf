@@ -1,5 +1,5 @@
 module "eks-node-infra" {
-  source = "github.com/Emerson89/eks-terraform.git//nodes?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git//modules//nodes?ref=main"
 
   cluster_name    = "k8s"
   cluster_version = "1.23"
