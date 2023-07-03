@@ -10,16 +10,16 @@ variable "nodes" {
   default     = {}
 }
 
-variable "custom_helm" {
-  description = "Custom a Release is an instance of a chart running in a Kubernetes cluster."
-  type        = map(any)
-  default     = {}
-}
-
 variable "domain" {
   description = "Domain used helm External dns"
   type        = string
   default     = ""
+}
+
+variable "custom_helm" {
+  description = "Custom a Release is an instance of a chart running in a Kubernetes cluster."
+  type        = map(any)
+  default     = {}
 }
 
 variable "custom_values_alb" {
@@ -30,6 +30,24 @@ variable "custom_values_alb" {
 
 variable "custom_values_ebs" {
   description = "Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster"
+  type        = any
+  default     = {}
+}
+
+variable "custom_values_asg" {
+  description = "Custom controller asg a Release is an instance of a chart running in a Kubernetes cluster"
+  type        = any
+  default     = {}
+}
+
+variable "custom_values_external-dns" {
+  description = "Custom external-dns a Release is an instance of a chart running in a Kubernetes cluster"
+  type        = any
+  default     = {}
+}
+
+variable "custom_values_metrics-server" {
+  description = "Custom metrics-server a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
   default     = {}
 }
@@ -50,24 +68,6 @@ variable "external-dns" {
   description = "Install release helm external"
   type        = bool
   default     = false
-}
-
-variable "custom_values_asg" {
-  description = "Custom controller asg a Release is an instance of a chart running in a Kubernetes cluster"
-  type        = any
-  default     = {}
-}
-
-variable "custom_values_external-dns" {
-  description = "Custom external-dns a Release is an instance of a chart running in a Kubernetes cluster"
-  type        = any
-  default     = {}
-}
-
-variable "custom_values_metrics-server" {
-  description = "Custom metrics-server a Release is an instance of a chart running in a Kubernetes cluster"
-  type        = any
-  default     = {}
 }
 
 variable "metrics-server" {
@@ -120,13 +120,15 @@ variable "mapAccounts" {
 }
 
 variable "create_aws_auth_configmap" {
-  type    = bool
-  default = false
+  description = "Create configmap aws-auth"
+  type        = bool
+  default     = false
 }
 
 variable "manage_aws_auth_configmap" {
-  type    = bool
-  default = false
+  description = "Manager configmap aws-auth"
+  type        = bool
+  default     = false
 }
 
 variable "node-role" {
@@ -175,11 +177,6 @@ variable "subnet_ids" {
   description = "Subnet private"
   type        = list(any)
   default     = []
-}
-
-variable "cluster_role" {
-  type    = list(any)
-  default = []
 }
 
 variable "enabled_cluster_log_types" {

@@ -1,5 +1,5 @@
 data "aws_iam_policy_document" "example_assume_role_policy" {
-  for_each = var.iam_roles 
+  for_each = var.iam_roles
 
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -10,7 +10,7 @@ data "aws_iam_policy_document" "example_assume_role_policy" {
       variable = "${replace("${each.value.openid_url}", "https://", "")}:sub"
       values   = ["system:serviceaccount:kube-system:${each.value.serviceaccount}"]
     }
-    
+
     condition {
       test     = "StringEquals"
       variable = "${replace("${each.value.openid_url}", "https://", "")}:aud"
@@ -25,7 +25,7 @@ data "aws_iam_policy_document" "example_assume_role_policy" {
 }
 
 resource "aws_iam_role" "this" {
-  for_each = var.iam_roles 
+  for_each = var.iam_roles
 
   assume_role_policy = data.aws_iam_policy_document.example_assume_role_policy[each.key].json
   name               = each.key
