@@ -79,7 +79,7 @@ module "sg-node" {
 }
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.23"

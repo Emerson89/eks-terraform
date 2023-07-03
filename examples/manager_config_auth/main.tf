@@ -16,7 +16,7 @@ provider "kubernetes" {
 ## EKS
 
 module "eks-master" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.23"
@@ -46,7 +46,7 @@ module "eks-master" {
 }
 
 module "rbac" {
-  source = "github.com/Emerson89/eks-terraform.git//modules//rbac?ref=main"
+  source = "github.com/Emerson89/eks-terraform.git//modules//rbac?ref=v1.0.0"
 
   rbac = {
     admin = {
