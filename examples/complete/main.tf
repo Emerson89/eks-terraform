@@ -36,18 +36,6 @@ module "vpc" {
   natname = "nat-k8s"
   rtname  = "rt-k8s"
 
-  route_table_routes_private = {
-    "nat" = {
-      "cidr_block"     = "0.0.0.0/0"
-      "nat_gateway_id" = "${module.vpc.nat}"
-    }
-  }
-  route_table_routes_public = {
-    "igw" = {
-      "cidr_block" = "0.0.0.0/0"
-      "gateway_id" = "${module.vpc.igw}"
-    }
-  }
 }
 
 ### EKS
@@ -108,6 +96,11 @@ module "eks" {
 
     }
   ]
+
+  private_subnet = module.vpc.private_ids
+
+  tags = local.tags
+
   ## Addons EKS
   create_ebs     = false
   create_core    = false
@@ -115,7 +108,7 @@ module "eks" {
   create_proxy   = false
 
   ## Controller EBS Helm
-  aws-ebs-csi-driver = true
+  aws-ebs-csi-driver = false
 
   ## Configuration custom values
   #custom_values_ebs = {
@@ -128,21 +121,18 @@ module "eks" {
 
   ## External DNS 
 
-  external-dns = true
+  external-dns = false
   domain       = "domain.io" ## Variable obrigatory for external dns
 
   ## Controller ASG
-  aws-autoscaler-controller = true
+  aws-autoscaler-controller = false
 
   ## Controller ALB
 
-  aws-load-balancer-controller = true
+  aws-load-balancer-controller = false
+  
+  ## Custom values
   custom_values_alb = {
-    values = [templatefile("${path.module}/values.yaml", {
-      aws_region   = "us-east-1"
-      cluster_name = "${module.eks.cluster_name}"
-      name         = "${module.eks.service_account_name}"
-    })]
     set = [
       {
         name  = "nodeSelector.Environment"
@@ -316,7 +306,7 @@ module "eks" {
       instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
-      taint_lt              = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+      taints_lt              = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
       labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
       name_asg              = "infra"
       vpc_zone_identifier   = "${module.vpc.private_ids}"
@@ -339,10 +329,6 @@ module "eks" {
       ]
     }
   }
-
-  private_subnet = module.vpc.private_ids
-
-  tags = local.tags
 
 }
 

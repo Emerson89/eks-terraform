@@ -77,6 +77,8 @@ module "eks" {
   ## Controller ALB
 
   aws-load-balancer-controller = true
+  
+  ## Custom Values
   custom_values_alb = {
     set = [
       {
