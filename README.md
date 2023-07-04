@@ -2,11 +2,11 @@
 
 Some of the addon/controller policies that are currently supported include:
 
-- [EBS-CSI-DRIVER](#https://github.com/kubernetes-sigs/aws-ebs-csi-driver)
-- [Cluster Autoscaler](#https://github.com/kubernetes/autoscaler/tree/master/charts/cluster-autoscaler)
-- [External DNS](#https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
-- [Load Balancer Controller](#https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/README.md)
-- [Metrics-Server](#https://github.com/helm/charts/tree/master/stable/metrics-server)
+- [EBS-CSI-DRIVER](https://github.com/kubernetes-sigs/aws-ebs-csi-driver)
+- [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/charts/cluster-autoscaler)
+- [External DNS](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
+- [Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/README.md)
+- [Metrics-Server](https://github.com/helm/charts/tree/master/stable/metrics-server)
 
 ### Addons EKS 
 
