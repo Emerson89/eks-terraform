@@ -1,3 +1,300 @@
+# EKS Terraform 
+
+Some of the addon/controller policies that are currently supported include:
+
+- [EBS-CSI-DRIVER](#https://github.com/kubernetes-sigs/aws-ebs-csi-driver)
+- [Cluster Autoscaler](#https://github.com/kubernetes/autoscaler/tree/master/charts/cluster-autoscaler)
+- [External DNS](#https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
+- [Load Balancer Controller](#https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/README.md)
+- [Metrics-Server](#https://github.com/helm/charts/tree/master/stable/metrics-server)
+
+### Addons EKS 
+
+- [kube-proxy](#kube-proxy)
+- [vpc-cni](#vpc-cni)
+- [core](#core)
+- [ebs](#ebs)
+#
+## Usage
+
+```hcl
+module "eks" {
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
+
+  cluster_name            = "k8s"
+  kubernetes_version      = "1.23"
+  subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
+  security_group_ids      = ["sg-abcabc123"]
+  environment             = "stg"
+  endpoint_private_access = true
+  endpoint_public_access  = true
+  ##Create aws-auth
+  create_aws_auth_configmap = true
+  manage_aws_auth_configmap = true
+
+  ## AWS-AUTH
+  mapRoles = [
+    {
+      rolearn  = "arn:aws:iam::xxxxxxxxxxxx:role/role-access"
+      username = "role-access"
+      groups   = ["read-only"] ## Group create rbac
+    }
+  ]
+  mapUsers = [
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxxxx:user/test"
+      username = "test"
+      groups   = ["Admin"] ## Group create rbac
+
+    }
+  ]
+  ## Addons EKS
+  create_ebs     = false
+  create_core    = false
+  create_vpc_cni = false
+  create_proxy   = false
+
+  ## Controller EBS Helm
+  aws-ebs-csi-driver = true
+
+  ## Configuration custom values
+  #custom_values_ebs = {
+  #  values = [templatefile("${path.module}/values-ebs.yaml", {
+  #    aws_region   = "us-east-1"
+  #    cluster_name = "k8s"
+  #    name         = "aws-ebs-csi-driver-stg"
+  #  })]
+  #}
+
+  ## External DNS 
+
+  external-dns = true
+  domain       = "domain.io" ## Variable obrigatory for external dns
+
+  ## Controller ASG
+  aws-autoscaler-controller = true
+
+  ## Controller ALB
+
+  aws-load-balancer-controller = true
+  custom_values_alb = {
+    set = [
+      {
+        name  = "nodeSelector.Environment"
+        value = "prd"
+      },
+      {
+        name  = "vpcId" ## Variable obrigatory for controller alb
+        value = "vpc-abcdabcd123
+      },
+      {
+        name  = "tolerations[0].key"
+        value = "key1"
+      },
+      {
+        name  = "tolerations[0].operator"
+        value = "Equal"
+      },
+      {
+        name  = "tolerations[0].value"
+        value = "prd"
+      },
+      {
+        name  = "tolerations[0].effect"
+        value = "NoSchedule"
+      }
+    ]
+  }
+
+  ## CUSTOM_HELM
+
+  custom_helm = {
+    aws-secrets-manager = {
+      "name"             = "aws-secrets-manager"
+      "namespace"        = "kube-system"
+      "repository"       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+      "chart"            = "secrets-store-csi-driver-provider-aws"
+      "version"          = "" ## When empty, the latest version will be installed
+      "create_namespace" = false
+
+      "values" = [] ## When empty, default values will be used
+    }
+  }
+
+  ## RBAC
+  rbac = {
+    admin = {
+      metadata = [{
+        name = "admin-cluster-role"
+        labels = {
+          "kubernetes.io/bootstrapping" : "rbac-defaults"
+        }
+        annotations = {
+          "rbac.authorization.kubernetes.io/autoupdate" : true
+        }
+      }]
+      rules = [{
+        api_groups = ["*"]
+        verbs      = ["*"]
+        resources  = ["*"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "Admin"
+      }]
+    }
+    read-only = {
+      metadata = [{
+        name = "read-only"
+      }]
+      rules = [{
+        api_groups = [""]
+        resources  = ["namespaces", "pods"]
+        verbs      = ["get", "list", "watch"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "read-only"
+      }]
+    }
+    ServiceAccount = {
+      service-account-create = true
+      metadata = [{
+        name = "svcaccount"
+      }]
+      rules = [{
+        api_groups = [""]
+        resources  = ["namespaces", "pods"]
+        verbs      = ["get", "list", "watch"]
+      }]
+      subjects = [{
+        kind      = "ServiceAccount"
+        name      = "svcaccount"
+        namespace = "kube-system"
+      }]
+    }
+  }
+
+  ## NODES
+  nodes = {
+    ## Manager nodes
+    infra = {
+      create_node     = true
+      node_name       = "infra"
+      cluster_version = "1.23"
+      desired_size    = 1
+      max_size        = 2
+      min_size        = 1
+      instance_types  = ["t3.medium"]
+      disk_size       = 20
+      capacity_type  = "SPOT"
+      labels = {
+        Environment = "stg"
+      }
+      taints = {
+        dedicated = {
+          key    = "environment"
+          value  = "stg"
+          effect = "NO_SCHEDULE"
+        }
+      }
+    }
+
+    ## Used launch template
+    infra-lt = {
+      create_node           = true
+      launch_create         = true
+      name_lt               = "lt"
+      node_name             = "infra-lt"
+      cluster_version       = "1.23"
+      desired_size          = 1
+      max_size              = 2
+      min_size              = 1
+      instance_types_launch = "t3.micro"
+      volume-size           = 20
+      volume-type           = "gp3"
+
+      labels = {
+        Environment = "stg"
+      }
+
+      taints = {
+        dedicated = {
+          key    = "environment"
+          value  = "stg"
+          effect = "NO_SCHEDULE"
+        }
+      }
+    }
+
+    ## Fargate profile
+
+    infra-fargate = {
+      create_node          = false
+      create_fargate       = true
+      fargate_profile_name = "infra-fargate"
+      selectors = [
+        {
+          namespace = "kube-system"
+          labels = {
+            k8s-app = "kube-dns"
+          }
+        },
+        {
+          namespace = "default"
+        }
+      ]
+    }
+
+    ## Self manager nodes
+
+    infra-asg = {
+      create_node           = false
+      launch_create         = true
+      asg_create            = true
+      cluster_version       = "1.23"
+      name_lt               = "lt-asg"
+      desired_size          = 1
+      max_size              = 2
+      min_size              = 1
+      instance_types_launch = "t3.medium"
+      volume-size           = 20
+      volume-type           = "gp3"
+      taint_lt              = "--register-with-taints=dedicated=stg:NoSchedule"
+      labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
+      name_asg              = "infra"
+      vpc_zone_identifier   = ["subnet-abacabc123","subnet-abacabc123","subnet-abcabac123"]
+      asg_tags = [
+        {
+          key                 = "Environment"
+          value               = "stg"
+          propagate_at_launch = true
+        },
+        {
+          key                 = "Name"
+          value               = "infra"
+          propagate_at_launch = true
+        },
+        {
+          key                 = "kubernetes.io/cluster/k8s"
+          value               = "owner"
+          propagate_at_launch = true
+        },
+      ]
+    } 
+  }
+
+  private_subnet = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
+
+  tags = {
+    Enviroment = "stg"
+  }
+
+}
+```
+
+## For other examples access 
+
 ## Requirements
 
 | Name | Version |
