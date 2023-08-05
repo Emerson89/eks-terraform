@@ -36,17 +36,6 @@ module "vpc" {
   natname = "nat-k8s"
   rtname  = "rt-k8s"
 
-  route_table_routes_private = {
-    "nat" = {
-      "nat_gateway_id" = "${module.vpc.nat}"
-    }
-  }
-  route_table_routes_public = {
-    "igw" = {
-      "gateway_id" = "${module.vpc.igw}"
-    }
-  }
-
 }
 
 ### EKS
