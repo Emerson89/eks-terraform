@@ -1,5 +1,4 @@
 resource "aws_iam_instance_profile" "iam-node-instance-profile-eks" {
-  name = format("iam-node-instance-profile-eks-%s-%s", var.cluster_name, var.environment)
   role = aws_iam_role.node.name
 }
 

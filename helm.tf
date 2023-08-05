@@ -65,6 +65,10 @@ module "ebs-helm" {
 
   set = try(var.custom_values_ebs["set"], {})
 
+  depends_on = [
+    module.nodes
+  ]
+
 }
 
 ## ALB
@@ -105,6 +109,9 @@ module "alb" {
 
   set = try(var.custom_values_alb["set"], {})
 
+  depends_on = [
+    module.nodes
+  ]
 }
 
 
@@ -150,6 +157,10 @@ module "asg" {
 
   set = try(var.custom_values_asg["set"], {})
 
+  depends_on = [
+    module.nodes
+  ]
+
 }
 
 
@@ -176,6 +187,10 @@ module "external-dns" {
 
   set = try(var.custom_values_external-dns["set"], {})
 
+  depends_on = [
+    module.nodes
+  ]
+
 }
 
 ## Metrics Server
@@ -197,6 +212,10 @@ module "metrics-server" {
   }
 
   set = try(var.custom_values_metrics-server["set"], {})
+
+  depends_on = [
+    module.nodes
+  ]
 
 }
 
@@ -220,5 +239,9 @@ module "custom" {
   }
 
   set = try(each.value.set, {})
+
+  depends_on = [
+    module.nodes
+  ]
 
 }

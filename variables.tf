@@ -101,36 +101,6 @@ variable "tags" {
   default     = {}
 }
 
-variable "mapRoles" {
-  description = "List of role maps to add to the aws-auth configmap"
-  type        = list(any)
-  default     = []
-}
-
-variable "mapUsers" {
-  description = "List of user maps to add to the aws-auth configmap"
-  type        = list(any)
-  default     = []
-}
-
-variable "mapAccounts" {
-  description = "List of accounts maps to add to the aws-auth configmap"
-  type        = list(any)
-  default     = []
-}
-
-variable "create_aws_auth_configmap" {
-  description = "Create configmap aws-auth"
-  type        = bool
-  default     = false
-}
-
-variable "manage_aws_auth_configmap" {
-  description = "Manager configmap aws-auth"
-  type        = bool
-  default     = false
-}
-
 variable "node-role" {
   description = "Role node"
   type        = string
@@ -205,6 +175,36 @@ variable "create_vpc_cni" {
 
 variable "create_proxy" {
   description = "Install addons proxy"
+  type        = bool
+  default     = false
+}
+
+variable "mapRoles" {
+  description = "List of role maps to add to the aws-auth configmap"
+  type        = list(any)
+  default     = []
+}
+
+variable "mapUsers" {
+  description = "List of user maps to add to the aws-auth configmap"
+  type        = list(any)
+  default     = []
+}
+
+variable "mapAccounts" {
+  description = "List of accounts maps to add to the aws-auth configmap"
+  type        = list(any)
+  default     = []
+}
+
+variable "create_aws_auth_configmap" {
+  description = "Create configmap aws-auth"
+  type        = bool
+  default     = false
+}
+
+variable "manage_aws_auth_configmap" {
+  description = "Manager configmap aws-auth"
   type        = bool
   default     = false
 }

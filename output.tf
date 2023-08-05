@@ -45,4 +45,3 @@ output "node-iam-arn" {
 output "node-iam-name-profile" {
   value = aws_iam_instance_profile.iam-node-instance-profile-eks.name
 }
-

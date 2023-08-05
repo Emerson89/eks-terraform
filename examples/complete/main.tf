@@ -5,9 +5,9 @@ provider "aws" {
 
 ##
 locals {
-  environment = "prd"
+  environment = "hmg"
   tags = {
-    Environment = "prd"
+    Environment = "hmg"
   }
   cluster_name = "k8s"
 }
@@ -35,6 +35,17 @@ module "vpc" {
   igwname = "igw-k8s"
   natname = "nat-k8s"
   rtname  = "rt-k8s"
+
+  route_table_routes_private = {
+    "nat" = {
+      "nat_gateway_id" = "${module.vpc.nat}"
+    }
+  }
+  route_table_routes_public = {
+    "igw" = {
+      "gateway_id" = "${module.vpc.igw}"
+    }
+  }
 
 }
 
@@ -67,7 +78,9 @@ module "sg-node" {
 }
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
+  #source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
+  source = "../.."
+
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.23"
@@ -76,26 +89,6 @@ module "eks" {
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
-  ##Create aws-auth
-  create_aws_auth_configmap = true
-  manage_aws_auth_configmap = true
-
-  ## AWS-AUTH
-  mapRoles = [
-    {
-      rolearn  = "arn:aws:iam::xxxxxxxxxxxx:role/role-access"
-      username = "role-access"
-      groups   = ["read-only"] ## Group create rbac
-    }
-  ]
-  mapUsers = [
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxxxx:user/test"
-      username = "test"
-      groups   = ["Admin"] ## Group create rbac
-
-    }
-  ]
 
   private_subnet = module.vpc.private_ids
 
@@ -120,23 +113,20 @@ module "eks" {
   #}
 
   ## External DNS 
-
-  external-dns = false
-  domain       = "domain.io" ## Variable obrigatory for external dns
+  external-dns = true
 
   ## Controller ASG
-  aws-autoscaler-controller = false
+  aws-autoscaler-controller = true
 
   ## Controller ALB
+  aws-load-balancer-controller = true
 
-  aws-load-balancer-controller = false
-  
   ## Custom values
   custom_values_alb = {
     set = [
       {
         name  = "nodeSelector.Environment"
-        value = "prd"
+        value = "hmg"
       },
       {
         name  = "vpcId" ## Variable obrigatory for controller alb
@@ -144,7 +134,7 @@ module "eks" {
       },
       {
         name  = "tolerations[0].key"
-        value = "key1"
+        value = "environment"
       },
       {
         name  = "tolerations[0].operator"
@@ -152,7 +142,7 @@ module "eks" {
       },
       {
         name  = "tolerations[0].value"
-        value = "prd"
+        value = "hmg"
       },
       {
         name  = "tolerations[0].effect"
@@ -176,60 +166,6 @@ module "eks" {
     }
   }
 
-  ## RBAC
-  rbac = {
-    admin = {
-      metadata = [{
-        name = "admin-cluster-role"
-        labels = {
-          "kubernetes.io/bootstrapping" : "rbac-defaults"
-        }
-        annotations = {
-          "rbac.authorization.kubernetes.io/autoupdate" : true
-        }
-      }]
-      rules = [{
-        api_groups = ["*"]
-        verbs      = ["*"]
-        resources  = ["*"]
-      }]
-      subjects = [{
-        kind = "Group"
-        name = "Admin"
-      }]
-    }
-    read-only = {
-      metadata = [{
-        name = "read-only"
-      }]
-      rules = [{
-        api_groups = [""]
-        resources  = ["namespaces", "pods"]
-        verbs      = ["get", "list", "watch"]
-      }]
-      subjects = [{
-        kind = "Group"
-        name = "read-only"
-      }]
-    }
-    ServiceAccount = {
-      service-account-create = true
-      metadata = [{
-        name = "svcaccount"
-      }]
-      rules = [{
-        api_groups = [""]
-        resources  = ["namespaces", "pods"]
-        verbs      = ["get", "list", "watch"]
-      }]
-      subjects = [{
-        kind      = "ServiceAccount"
-        name      = "svcaccount"
-        namespace = "kube-system"
-      }]
-    }
-  }
-
   ## NODES
   nodes = {
     infra = {
@@ -237,20 +173,10 @@ module "eks" {
       node_name       = "infra"
       cluster_version = "1.23"
       desired_size    = 1
-      max_size        = 2
+      max_size        = 3
       min_size        = 1
       instance_types  = ["t3.medium"]
       disk_size       = 20
-      labels = {
-        Environment = "${local.environment}"
-      }
-      taints = {
-        dedicated = {
-          key    = "environment"
-          value  = "${local.environment}"
-          effect = "NO_SCHEDULE"
-        }
-      }
     }
     infra-lt = {
       create_node           = true
@@ -259,9 +185,9 @@ module "eks" {
       node_name             = "infra-lt"
       cluster_version       = "1.23"
       desired_size          = 1
-      max_size              = 2
+      max_size              = 3
       min_size              = 1
-      instance_types_launch = "t3.micro"
+      instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
 
@@ -306,7 +232,7 @@ module "eks" {
       instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
-      taints_lt              = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+      taints_lt             = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
       labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
       name_asg              = "infra"
       vpc_zone_identifier   = "${module.vpc.private_ids}"

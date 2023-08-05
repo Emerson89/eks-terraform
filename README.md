@@ -25,29 +25,10 @@ module "eks" {
   kubernetes_version      = "1.23"
   subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
   security_group_ids      = ["sg-abcabc123"]
-  environment             = "stg"
+  environment             = "hmg"
   endpoint_private_access = true
   endpoint_public_access  = true
-  ##Create aws-auth
-  create_aws_auth_configmap = true
-  manage_aws_auth_configmap = true
-
-  ## AWS-AUTH
-  mapRoles = [
-    {
-      rolearn  = "arn:aws:iam::xxxxxxxxxxxx:role/role-access"
-      username = "role-access"
-      groups   = ["read-only"] ## Group create rbac
-    }
-  ]
-  mapUsers = [
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxxxx:user/test"
-      username = "test"
-      groups   = ["Admin"] ## Group create rbac
-
-    }
-  ]
+  
   ## Addons EKS
   create_ebs     = false
   create_core    = false
@@ -61,21 +42,18 @@ module "eks" {
   #custom_values_ebs = {
   #  values = [templatefile("${path.module}/values-ebs.yaml", {
   #    aws_region   = "us-east-1"
-  #    cluster_name = "k8s"
-  #    name         = "aws-ebs-csi-driver-stg"
+  #    cluster_name = "${local.cluster_name}"
+  #    name         = "aws-ebs-csi-driver-${local.environment}"
   #  })]
   #}
 
   ## External DNS 
-
   external-dns = true
-  domain       = "domain.io" ## Variable obrigatory for external dns
 
   ## Controller ASG
   aws-autoscaler-controller = true
 
   ## Controller ALB
-
   aws-load-balancer-controller = true
   
   ## Custom Values
@@ -83,7 +61,7 @@ module "eks" {
     set = [
       {
         name  = "nodeSelector.Environment"
-        value = "prd"
+        value = "hmg"
       },
       {
         name  = "vpcId" ## Variable obrigatory for controller alb
@@ -91,7 +69,7 @@ module "eks" {
       },
       {
         name  = "tolerations[0].key"
-        value = "key1"
+        value = "environment"
       },
       {
         name  = "tolerations[0].operator"
@@ -99,7 +77,7 @@ module "eks" {
       },
       {
         name  = "tolerations[0].value"
-        value = "prd"
+        value = "hmg"
       },
       {
         name  = "tolerations[0].effect"
@@ -123,60 +101,6 @@ module "eks" {
     }
   }
 
-  ## RBAC
-  rbac = {
-    admin = {
-      metadata = [{
-        name = "admin-cluster-role"
-        labels = {
-          "kubernetes.io/bootstrapping" : "rbac-defaults"
-        }
-        annotations = {
-          "rbac.authorization.kubernetes.io/autoupdate" : true
-        }
-      }]
-      rules = [{
-        api_groups = ["*"]
-        verbs      = ["*"]
-        resources  = ["*"]
-      }]
-      subjects = [{
-        kind = "Group"
-        name = "Admin"
-      }]
-    }
-    read-only = {
-      metadata = [{
-        name = "read-only"
-      }]
-      rules = [{
-        api_groups = [""]
-        resources  = ["namespaces", "pods"]
-        verbs      = ["get", "list", "watch"]
-      }]
-      subjects = [{
-        kind = "Group"
-        name = "read-only"
-      }]
-    }
-    ServiceAccount = {
-      service-account-create = true
-      metadata = [{
-        name = "svcaccount"
-      }]
-      rules = [{
-        api_groups = [""]
-        resources  = ["namespaces", "pods"]
-        verbs      = ["get", "list", "watch"]
-      }]
-      subjects = [{
-        kind      = "ServiceAccount"
-        name      = "svcaccount"
-        namespace = "kube-system"
-      }]
-    }
-  }
-
   ## NODES
   nodes = {
     ## Manager nodes
@@ -190,16 +114,6 @@ module "eks" {
       instance_types  = ["t3.medium"]
       disk_size       = 20
       capacity_type  = "SPOT"
-      labels = {
-        Environment = "stg"
-      }
-      taints = {
-        dedicated = {
-          key    = "environment"
-          value  = "stg"
-          effect = "NO_SCHEDULE"
-        }
-      }
     }
 
     ## Used launch template
@@ -232,7 +146,6 @@ module "eks" {
     ## Fargate profile
 
     infra-fargate = {
-      create_node          = false
       create_fargate       = true
       fargate_profile_name = "infra-fargate"
       selectors = [
@@ -251,7 +164,6 @@ module "eks" {
     ## Self manager nodes
 
     infra-asg = {
-      create_node           = false
       launch_create         = true
       asg_create            = true
       cluster_version       = "1.23"
@@ -286,12 +198,61 @@ module "eks" {
     } 
   }
 
-  private_subnet = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
+}
+```
 
-  tags = {
-    Enviroment = "stg"
+***Only Self manager nodes***
+
+```hcl
+module "eks" {
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
+
+  cluster_name            = "k8s"
+  kubernetes_version      = "1.23"
+  subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
+  security_group_ids      = ["sg-abcabc123"]
+  environment             = "hmg"
+  endpoint_private_access = true
+  endpoint_public_access  = true
+  
+  ##Create aws-auth
+  create_aws_auth_configmap = true
+
+  nodes = {
+    infra-asg = {
+      launch_create         = true
+      asg_create            = true
+      cluster_version       = "1.23"
+      name_lt               = "lt-asg"
+      desired_size          = 1
+      max_size              = 2
+      min_size              = 1
+      instance_types_launch = "t3.medium"
+      volume-size           = 20
+      volume-type           = "gp3"
+      taint_lt              = "--register-with-taints=dedicated=stg:NoSchedule"
+      labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
+      name_asg              = "infra"
+      vpc_zone_identifier   = ["subnet-abacabc123","subnet-abacabc123","subnet-abcabac123"]
+      asg_tags = [
+        {
+          key                 = "Environment"
+          value               = "stg"
+          propagate_at_launch = true
+        },
+        {
+          key                 = "Name"
+          value               = "infra"
+          propagate_at_launch = true
+        },
+        {
+          key                 = "kubernetes.io/cluster/k8s"
+          value               = "owner"
+          propagate_at_launch = true
+        },
+      ]
+    } 
   }
-
 }
 ```
 
@@ -302,16 +263,16 @@ module "eks" {
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.2.9 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 3.72 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.9 |
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.10.1 |
-| <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.21.1 |
+| <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.20.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 3.72 |
-| <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | >= 2.21.1 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.9 |
+| <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | >= 2.20.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Modules
@@ -331,7 +292,6 @@ module "eks" {
 | <a name="module_metrics-server"></a> [metrics-server](#module\_metrics-server) | ./modules/helm | n/a |
 | <a name="module_nodes"></a> [nodes](#module\_nodes) | ./modules/nodes | n/a |
 | <a name="module_proxy"></a> [proxy](#module\_proxy) | ./modules/addons | n/a |
-| <a name="module_rbac"></a> [rbac](#module\_rbac) | ./modules/rbac | n/a |
 | <a name="module_vpc-cni"></a> [vpc-cni](#module\_vpc-cni) | ./modules/addons | n/a |
 
 ## Resources
