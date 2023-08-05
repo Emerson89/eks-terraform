@@ -36,7 +36,7 @@ module "eks" {
   create_proxy   = false
 
   ## Controller EBS Helm
-  aws-ebs-csi-driver = true
+  aws-ebs-csi-driver = false
 
   ## Configuration custom values
   #custom_values_ebs = {
@@ -48,13 +48,13 @@ module "eks" {
   #}
 
   ## External DNS 
-  external-dns = true
+  external-dns = false
 
   ## Controller ASG
-  aws-autoscaler-controller = true
+  aws-autoscaler-controller = false
 
   ## Controller ALB
-  aws-load-balancer-controller = true
+  aws-load-balancer-controller = false
   
   ## Custom Values
   custom_values_alb = {

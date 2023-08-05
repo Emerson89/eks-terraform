@@ -78,9 +78,7 @@ module "sg-node" {
 }
 
 module "eks" {
-  #source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
-  source = "../.."
-
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.23"
@@ -113,13 +111,13 @@ module "eks" {
   #}
 
   ## External DNS 
-  external-dns = true
+  external-dns = false
 
   ## Controller ASG
-  aws-autoscaler-controller = true
+  aws-autoscaler-controller = false
 
   ## Controller ALB
-  aws-load-balancer-controller = true
+  aws-load-balancer-controller = false
 
   ## Custom values
   custom_values_alb = {
