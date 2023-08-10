@@ -67,10 +67,10 @@ module "sg-node" {
 }
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.1"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.23"
+  kubernetes_version      = "1.24"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   security_group_ids      = [module.sg-cluster.sg_id]
   environment             = local.environment
@@ -87,6 +87,10 @@ module "eks" {
   create_vpc_cni = false
   create_proxy   = false
 
+  ## EFS controller
+  aws-efs-csi-driver = false
+  filesystem_id      = "fs-92107410"
+
   ## Controller EBS Helm
   aws-ebs-csi-driver = false
 
@@ -95,7 +99,6 @@ module "eks" {
   #  values = [templatefile("${path.module}/values-ebs.yaml", {
   #    aws_region   = "us-east-1"
   #    cluster_name = "${local.cluster_name}"
-  #    name         = "aws-ebs-csi-driver-${var.environment}"
   #  })]
   #}
 
@@ -118,6 +121,10 @@ module "eks" {
       {
         name  = "vpcId" ## Variable obrigatory for controller alb
         value = module.vpc.vpc_id
+      },
+      {
+        name  = "tag"
+        value = "v2.5.4"
       },
       {
         name  = "tolerations[0].key"
@@ -156,21 +163,21 @@ module "eks" {
   ## NODES
   nodes = {
     infra = {
-      create_node     = true
-      node_name       = "infra"
-      cluster_version = "1.23"
-      desired_size    = 1
-      max_size        = 3
-      min_size        = 1
-      instance_types  = ["t3.medium"]
-      disk_size       = 20
+      create_node             = true
+      node_name               = "infra"
+      cluster_version_manager = "1.24"
+      desired_size            = 1
+      max_size                = 3
+      min_size                = 1
+      instance_types          = ["t3.medium"]
+      disk_size               = 20
     }
     infra-lt = {
       create_node           = true
       launch_create         = true
       name_lt               = "lt"
       node_name             = "infra-lt"
-      cluster_version       = "1.23"
+      cluster_version       = "1.24"
       desired_size          = 1
       max_size              = 3
       min_size              = 1
@@ -193,7 +200,7 @@ module "eks" {
 
     infra-fargate = {
       create_node          = false
-      create_fargate       = true
+      create_fargate       = false
       fargate_profile_name = "infra-fargate"
       selectors = [
         {
@@ -209,9 +216,9 @@ module "eks" {
     }
     infra-asg = {
       create_node           = false
-      launch_create         = true
-      asg_create            = true
-      cluster_version       = "1.23"
+      launch_create         = false
+      asg_create            = false
+      cluster_version       = "1.24"
       name_lt               = "lt-asg"
       desired_size          = 1
       max_size              = 2

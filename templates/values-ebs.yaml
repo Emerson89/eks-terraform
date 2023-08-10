@@ -19,9 +19,10 @@ controller:
       memory: 256Mi
   serviceAccount:
   # A service account will be created for you if set to true. Set to false if you want to use your own.
-    create: false
-    name: ${name}
-    annotations: {}
+    create: true
+    name: ebs-csi-controller-sa
+    annotations: 
+      eks.amazonaws.com/role-arn: ${aws_arn_ebs}
     automountServiceAccountToken: true
 
 storageClasses:

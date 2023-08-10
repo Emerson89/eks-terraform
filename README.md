@@ -3,6 +3,7 @@
 Some of the addon/controller policies that are currently supported include:
 
 - [EBS-CSI-DRIVER](https://github.com/kubernetes-sigs/aws-ebs-csi-driver)
+- [EFS-CSI-DRIVER](https://github.com/kubernetes-sigs/aws-efs-csi-driver)
 - [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/charts/cluster-autoscaler)
 - [External DNS](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
 - [Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/README.md)
@@ -14,36 +15,45 @@ Some of the addon/controller policies that are currently supported include:
 - [vpc-cni](#vpc-cni)
 - [core](#core)
 - [ebs](#ebs)
+- [efs](#efs)
+
 #
 ## Usage
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.1"
 
-  cluster_name            = "k8s"
-  kubernetes_version      = "1.23"
-  subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
-  security_group_ids      = ["sg-abcabc123"]
-  environment             = "hmg"
+  cluster_name            = local.cluster_name
+  kubernetes_version      = "1.24"
+  subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
+  security_group_ids      = [module.sg-cluster.sg_id]
+  environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
-  
+
+  private_subnet = module.vpc.private_ids
+
+  tags = local.tags
+
   ## Addons EKS
   create_ebs     = false
   create_core    = false
   create_vpc_cni = false
   create_proxy   = false
+  
+  ## EFS controller
+  aws-efs-csi-driver = false
+  filesystem_id      = "fs-92107410"
 
   ## Controller EBS Helm
   aws-ebs-csi-driver = false
-
+  
   ## Configuration custom values
   #custom_values_ebs = {
   #  values = [templatefile("${path.module}/values-ebs.yaml", {
   #    aws_region   = "us-east-1"
   #    cluster_name = "${local.cluster_name}"
-  #    name         = "aws-ebs-csi-driver-${local.environment}"
   #  })]
   #}
 
@@ -55,8 +65,8 @@ module "eks" {
 
   ## Controller ALB
   aws-load-balancer-controller = false
-  
-  ## Custom Values
+
+  ## Custom values
   custom_values_alb = {
     set = [
       {
@@ -65,7 +75,11 @@ module "eks" {
       },
       {
         name  = "vpcId" ## Variable obrigatory for controller alb
-        value = "vpc-abcdabcd123
+        value = module.vpc.vpc_id
+      },
+      {
+        name  = "tag"
+        value = "v2.5.4"
       },
       {
         name  = "tolerations[0].key"
@@ -103,47 +117,41 @@ module "eks" {
 
   ## NODES
   nodes = {
-    ## Manager nodes
     infra = {
-      create_node     = true
-      node_name       = "infra"
-      cluster_version = "1.23"
-      desired_size    = 1
-      max_size        = 2
-      min_size        = 1
-      instance_types  = ["t3.medium"]
-      disk_size       = 20
-      capacity_type  = "SPOT"
+      create_node             = true
+      node_name               = "infra"
+      cluster_version_manager = "1.24"
+      desired_size            = 1
+      max_size                = 3
+      min_size                = 1
+      instance_types          = ["t3.medium"]
+      disk_size               = 20
     }
-
-    ## Used launch template
     infra-lt = {
       create_node           = true
       launch_create         = true
       name_lt               = "lt"
       node_name             = "infra-lt"
-      cluster_version       = "1.23"
+      cluster_version       = "1.24"
       desired_size          = 1
-      max_size              = 2
+      max_size              = 3
       min_size              = 1
-      instance_types_launch = "t3.micro"
+      instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
 
       labels = {
-        Environment = "stg"
+        Environment = "${local.environment}"
       }
 
       taints = {
         dedicated = {
           key    = "environment"
-          value  = "stg"
+          value  = "${local.environment}"
           effect = "NO_SCHEDULE"
         }
       }
     }
-
-    ## Fargate profile
 
     infra-fargate = {
       create_fargate       = true
@@ -160,13 +168,10 @@ module "eks" {
         }
       ]
     }
-
-    ## Self manager nodes
-
     infra-asg = {
       launch_create         = true
       asg_create            = true
-      cluster_version       = "1.23"
+      cluster_version       = "1.24"
       name_lt               = "lt-asg"
       desired_size          = 1
       max_size              = 2
@@ -174,28 +179,28 @@ module "eks" {
       instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
-      taint_lt              = "--register-with-taints=dedicated=stg:NoSchedule"
+      taints_lt             = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
       labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
       name_asg              = "infra"
-      vpc_zone_identifier   = ["subnet-abacabc123","subnet-abacabc123","subnet-abcabac123"]
+      vpc_zone_identifier   = "${module.vpc.private_ids}"
       asg_tags = [
         {
           key                 = "Environment"
-          value               = "stg"
+          value               = "${local.environment}"
           propagate_at_launch = true
         },
         {
           key                 = "Name"
-          value               = "infra"
+          value               = "${local.environment}"
           propagate_at_launch = true
         },
         {
-          key                 = "kubernetes.io/cluster/k8s"
+          key                 = "kubernetes.io/cluster/${local.cluster_name}"
           value               = "owner"
           propagate_at_launch = true
         },
       ]
-    } 
+    }
   }
 
 }
@@ -205,7 +210,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.1"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.23"
@@ -256,24 +261,7 @@ module "eks" {
 }
 ```
 
-## For other examples access 
-
-## Requirements
-
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.2.9 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.9 |
-| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.10.1 |
-| <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.20.0 |
-
-## Providers
-
-| Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.9 |
-| <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | >= 2.20.0 |
-| <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
+## For other examples access
 
 ## Modules
 
@@ -285,10 +273,12 @@ module "eks" {
 | <a name="module_custom"></a> [custom](#module\_custom) | ./modules/helm | n/a |
 | <a name="module_ebs"></a> [ebs](#module\_ebs) | ./modules/addons | n/a |
 | <a name="module_ebs-helm"></a> [ebs-helm](#module\_ebs-helm) | ./modules/helm | n/a |
+| <a name="module_efs-helm"></a> [efs-helm](#module\_efs-helm) | ./modules/helm | n/a |
 | <a name="module_external-dns"></a> [external-dns](#module\_external-dns) | ./modules/helm | n/a |
 | <a name="module_iam-alb"></a> [iam-alb](#module\_iam-alb) | ./modules/iam | n/a |
 | <a name="module_iam-asg"></a> [iam-asg](#module\_iam-asg) | ./modules/iam | n/a |
 | <a name="module_iam-ebs"></a> [iam-ebs](#module\_iam-ebs) | ./modules/iam | n/a |
+| <a name="module_iam-efs"></a> [iam-efs](#module\_iam-efs) | ./modules/iam | n/a |
 | <a name="module_metrics-server"></a> [metrics-server](#module\_metrics-server) | ./modules/helm | n/a |
 | <a name="module_nodes"></a> [nodes](#module\_nodes) | ./modules/nodes | n/a |
 | <a name="module_proxy"></a> [proxy](#module\_proxy) | ./modules/addons | n/a |
@@ -327,6 +317,7 @@ module "eks" {
 |------|-------------|------|---------|:--------:|
 | <a name="input_aws-autoscaler-controller"></a> [aws-autoscaler-controller](#input\_aws-autoscaler-controller) | Install release helm controller asg | `bool` | `false` | no |
 | <a name="input_aws-ebs-csi-driver"></a> [aws-ebs-csi-driver](#input\_aws-ebs-csi-driver) | Install release helm controller ebs | `bool` | `false` | no |
+| <a name="input_aws-efs-csi-driver"></a> [aws-efs-csi-driver](#input\_aws-efs-csi-driver) | Install release helm controller efs | `bool` | `false` | no |
 | <a name="input_aws-load-balancer-controller"></a> [aws-load-balancer-controller](#input\_aws-load-balancer-controller) | Install release helm controller alb | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name cluster | `string` | `null` | no |
 | <a name="input_create_aws_auth_configmap"></a> [create\_aws\_auth\_configmap](#input\_create\_aws\_auth\_configmap) | Create configmap aws-auth | `bool` | `false` | no |
@@ -338,6 +329,7 @@ module "eks" {
 | <a name="input_custom_values_alb"></a> [custom\_values\_alb](#input\_custom\_values\_alb) | Custom controler alb a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_asg"></a> [custom\_values\_asg](#input\_custom\_values\_asg) | Custom controller asg a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_ebs"></a> [custom\_values\_ebs](#input\_custom\_values\_ebs) | Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
+| <a name="input_custom_values_efs"></a> [custom\_values\_efs](#input\_custom\_values\_efs) | Custom controler efs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_external-dns"></a> [custom\_values\_external-dns](#input\_custom\_values\_external-dns) | Custom external-dns a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_metrics-server"></a> [custom\_values\_metrics-server](#input\_custom\_values\_metrics-server) | Custom metrics-server a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_domain"></a> [domain](#input\_domain) | Domain used helm External dns | `string` | `""` | no |
@@ -346,6 +338,7 @@ module "eks" {
 | <a name="input_endpoint_public_access"></a> [endpoint\_public\_access](#input\_endpoint\_public\_access) | Endpoint access public | `bool` | `true` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Env tags | `string` | `null` | no |
 | <a name="input_external-dns"></a> [external-dns](#input\_external-dns) | Install release helm external | `bool` | `false` | no |
+| <a name="input_filesystem_id"></a> [filesystem\_id](#input\_filesystem\_id) | Filesystem used helm efs | `string` | `"fs-92107410"` | no |
 | <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | Version kubernetes | `string` | `"1.23"` | no |
 | <a name="input_manage_aws_auth_configmap"></a> [manage\_aws\_auth\_configmap](#input\_manage\_aws\_auth\_configmap) | Manager configmap aws-auth | `bool` | `false` | no |
 | <a name="input_mapAccounts"></a> [mapAccounts](#input\_mapAccounts) | List of accounts maps to add to the aws-auth configmap | `list(any)` | `[]` | no |

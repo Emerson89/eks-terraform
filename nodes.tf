@@ -3,19 +3,20 @@ module "nodes" {
 
   for_each = var.nodes
 
-  cluster_name    = try(aws_eks_cluster.eks_cluster.name, null)
-  cluster_version = try(each.value.cluster_version, null)
-  node-role       = try(aws_iam_role.node.arn, "")
-  private_subnet  = try(var.private_subnet, [])
-  node_name       = try(each.value.node_name, null)
-  desired_size    = try(each.value.desired_size, null)
-  max_size        = try(each.value.max_size, null)
-  min_size        = try(each.value.min_size, null)
-  environment     = var.environment
-  instance_types  = try(each.value.instance_types, [])
-  disk_size       = try(each.value.disk_size, null)
-  capacity_type   = try(each.value.capacity_type, "ON_DEMAND")
-  create_node     = try(each.value.create_node, false)
+  cluster_name            = try(aws_eks_cluster.eks_cluster.name, null)
+  cluster_version         = try(each.value.cluster_version, null)
+  node-role               = try(aws_iam_role.node.arn, "")
+  private_subnet          = try(var.private_subnet, [])
+  node_name               = try(each.value.node_name, null)
+  desired_size            = try(each.value.desired_size, null)
+  max_size                = try(each.value.max_size, null)
+  min_size                = try(each.value.min_size, null)
+  environment             = var.environment
+  instance_types          = try(each.value.instance_types, [])
+  disk_size               = try(each.value.disk_size, null)
+  capacity_type           = try(each.value.capacity_type, "ON_DEMAND")
+  cluster_version_manager = try(each.value.cluster_version_manager, "")
+  create_node             = try(each.value.create_node, false)
 
   labels = try(each.value.labels, {})
   taints = try(each.value.taints, {})

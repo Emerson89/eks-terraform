@@ -15,7 +15,7 @@ resource "aws_cloudwatch_log_group" "this" {
 
 resource "aws_eks_cluster" "eks_cluster" {
 
-  name     = format("%s-%s", var.cluster_name, var.environment)
+  name     = var.cluster_name
   role_arn = aws_iam_role.master.arn
   version  = var.kubernetes_version
 

@@ -4,6 +4,8 @@ locals {
   name_external-dns   = "external-dns"
   name_metrics-server = "metrics-server"
   name_ebs            = "aws-ebs-csi-driver"
+  name_efs            = "aws-efs-csi-driver"
+
 }
 
 provider "kubernetes" {
@@ -26,6 +28,51 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
+## EFS
+
+module "iam-efs" {
+  source = "./modules/iam"
+
+  count = var.aws-efs-csi-driver ? 1 : 0
+
+  iam_roles = {
+    "aws-efs-csi-driver-${var.environment}" = {
+      "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
+      "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
+      "serviceaccount" = "efs-csi-*"
+      "string"         = "StringLike"
+      "policy"         = file("${path.module}/templates/policy-efs.json")
+    }
+  }
+}
+
+module "efs-helm" {
+  source = "./modules/helm"
+
+  count = var.aws-efs-csi-driver ? 1 : 0
+
+  helm_release = {
+
+    name       = try(var.custom_values_efs["name"], local.name_efs)
+    namespace  = try(var.custom_values_efs["namespace"], "kube-system")
+    repository = "https://kubernetes-sigs.github.io/aws-efs-csi-driver"
+    chart      = "aws-efs-csi-driver"
+
+    values = try(var.custom_values_efs["values"], [templatefile("${path.module}/templates/values-efs.yaml", {
+      aws_region    = "${data.aws_region.current.name}"
+      aws_arn_efs   = module.iam-efs[0].arn[0]
+      filesystem_id = var.filesystem_id
+    })])
+
+  }
+
+  set = try(var.custom_values_efs["set"], {})
+
+  depends_on = [
+    module.nodes
+  ]
+
+}
 ## EBS
 
 module "iam-ebs" {
@@ -37,7 +84,8 @@ module "iam-ebs" {
     "aws-ebs-csi-driver-${var.environment}" = {
       "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
-      "serviceaccount" = "aws-ebs-csi-driver-${var.environment}"
+      "serviceaccount" = "ebs-csi-controller-sa"
+      "string"         = "StringEquals"
       "policy"         = file("${path.module}/templates/policy-ebs.json")
     }
   }
@@ -58,7 +106,7 @@ module "ebs-helm" {
     values = try(var.custom_values_ebs["values"], [templatefile("${path.module}/templates/values-ebs.yaml", {
       aws_region   = "${data.aws_region.current.name}"
       cluster_name = "${aws_eks_cluster.eks_cluster.name}"
-      name         = "aws-ebs-csi-driver-${var.environment}"
+      aws_arn_ebs  = module.iam-ebs[0].arn[0]
     })])
 
   }
@@ -81,7 +129,8 @@ module "iam-alb" {
     "aws-load-balancer-controller-${var.environment}" = {
       "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
-      "serviceaccount" = "aws-load-balancer-controller-${var.environment}"
+      "serviceaccount" = "aws-load-balancer-controller"
+      "string"         = "StringEquals"
       "policy"         = file("${path.module}/templates/policy-alb.json")
     }
   }
@@ -102,7 +151,7 @@ module "alb" {
     values = try(var.custom_values_alb["values"], [templatefile("${path.module}/templates/values-alb.yaml", {
       aws_region   = "${data.aws_region.current.name}"
       cluster_name = "${aws_eks_cluster.eks_cluster.name}"
-      name         = "aws-load-balancer-controller-${var.environment}"
+      aws_arn_alb  = module.iam-alb[0].arn[0]
     })])
 
   }
@@ -126,7 +175,8 @@ module "iam-asg" {
     "cluster-autoscaler-${var.environment}" = {
       "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
-      "serviceaccount" = "cluster-autoscaler-${var.environment}"
+      "serviceaccount" = "cluster-autoscaler-aws-cluster-autoscaler"
+      "string"         = "StringEquals"
       "policy" = templatefile("${path.module}/templates/policy-asg.json", {
         cluster_name = "${aws_eks_cluster.eks_cluster.name}"
       })
@@ -149,7 +199,7 @@ module "asg" {
     values = try(var.custom_values_asg["values"], [templatefile("${path.module}/templates/values-asg.yaml", {
       aws_region   = "${data.aws_region.current.name}"
       cluster_name = "${aws_eks_cluster.eks_cluster.name}"
-      name         = "cluster-autoscaler-${var.environment}"
+      aws_arn_asg  = module.iam-asg[0].arn[0]
       version_k8s  = "${aws_eks_cluster.eks_cluster.version}"
     })])
 
@@ -228,11 +278,12 @@ module "custom" {
 
   helm_release = {
 
-    name       = try(each.value.name, "")
-    namespace  = try(each.value.namespace, "")
-    repository = try(each.value.repository, "")
-    version    = try(each.value.version, "")
-    chart      = try(each.value.chart, "")
+    name             = try(each.value.name, "")
+    namespace        = try(each.value.namespace, "")
+    repository       = try(each.value.repository, "")
+    version          = try(each.value.version, "")
+    chart            = try(each.value.chart, "")
+    create_namespace = try(each.value.create_namespace, false)
 
     values = try(each.value.values, [])
 

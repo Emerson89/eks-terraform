@@ -11,6 +11,7 @@ resource "aws_eks_node_group" "eks_node_group" {
   node_role_arn   = var.node-role
   instance_types  = var.launch_create ? null : var.instance_types
   disk_size       = var.launch_create ? null : var.disk_size
+  version         = var.launch_create ? null : var.cluster_version_manager
   labels          = var.labels
   capacity_type   = var.capacity_type
 

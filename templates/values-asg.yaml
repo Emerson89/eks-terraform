@@ -37,15 +37,15 @@ extraArgs:
 
 image:
   repository: registry.k8s.io/autoscaling/cluster-autoscaler
-  tag: v${version_k8s}.1
+  tag: v${version_k8s}.0
 
 nodeSelector: {}
 
 rbac:
   serviceAccount:
-    annotations: {}
-    create: false
-    name: ${name}
+    annotations:
+      eks.amazonaws.com/role-arn: ${aws_arn_asg}
+    create: true
 
 replicaCount: 1
 

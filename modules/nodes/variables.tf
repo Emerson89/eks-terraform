@@ -40,6 +40,12 @@ variable "capacity_type" {
   default     = "ON_DEMAND"
 }
 
+variable "cluster_version_manager" {
+  description = "Version cluster"
+  type        = string
+  default     = ""
+}
+
 variable "cluster_name" {
   description = "Name cluster"
   type        = string

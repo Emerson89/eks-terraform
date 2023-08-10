@@ -1,4 +1,4 @@
-data "aws_iam_policy_document" "example_assume_role_policy" {
+data "aws_iam_policy_document" "this" {
   for_each = var.iam_roles
 
   statement {
@@ -6,13 +6,13 @@ data "aws_iam_policy_document" "example_assume_role_policy" {
     effect  = "Allow"
 
     condition {
-      test     = "StringEquals"
+      test     = each.value.string
       variable = "${replace("${each.value.openid_url}", "https://", "")}:sub"
       values   = ["system:serviceaccount:kube-system:${each.value.serviceaccount}"]
     }
 
     condition {
-      test     = "StringEquals"
+      test     = each.value.string
       variable = "${replace("${each.value.openid_url}", "https://", "")}:aud"
       values   = ["sts.amazonaws.com"]
     }
@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "example_assume_role_policy" {
 resource "aws_iam_role" "this" {
   for_each = var.iam_roles
 
-  assume_role_policy = data.aws_iam_policy_document.example_assume_role_policy[each.key].json
+  assume_role_policy = data.aws_iam_policy_document.this[each.key].json
   name               = each.key
 }
 
@@ -39,21 +39,4 @@ resource "aws_iam_role_policy" "this" {
 
   policy = each.value.policy
 
-}
-
-resource "kubernetes_service_account" "service-account" {
-  for_each = var.iam_roles
-
-  metadata {
-    name      = each.key
-    namespace = "kube-system"
-    labels = {
-      "app.kubernetes.io/name"      = each.key
-      "app.kubernetes.io/component" = "controller"
-    }
-    annotations = {
-      "eks.amazonaws.com/role-arn"               = "${aws_iam_role.this[each.key].arn}"
-      "eks.amazonaws.com/sts-regional-endpoints" = "true"
-    }
-  }
 }

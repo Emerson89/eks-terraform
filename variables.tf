@@ -1,9 +1,3 @@
-variable "rbac" {
-  description = "Map rbac configuration"
-  type        = any
-  default     = {}
-}
-
 variable "nodes" {
   description = "Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any
@@ -101,22 +95,10 @@ variable "tags" {
   default     = {}
 }
 
-variable "node-role" {
-  description = "Role node"
-  type        = string
-  default     = null
-}
-
 variable "cluster_name" {
   description = "Name cluster"
   type        = string
-  default     = null
-}
-
-variable "master-role" {
-  description = "Role master"
-  type        = string
-  default     = ""
+  default     = "k8s"
 }
 
 variable "kubernetes_version" {
@@ -205,6 +187,24 @@ variable "create_aws_auth_configmap" {
 
 variable "manage_aws_auth_configmap" {
   description = "Manager configmap aws-auth"
+  type        = bool
+  default     = false
+}
+
+variable "filesystem_id" {
+  description = "Filesystem used helm efs"
+  type        = string
+  default     = "fs-92107410"
+}
+
+variable "custom_values_efs" {
+  description = "Custom controler efs a Release is an instance of a chart running in a Kubernetes cluster"
+  type        = any
+  default     = {}
+}
+
+variable "aws-efs-csi-driver" {
+  description = "Install release helm controller efs"
   type        = bool
   default     = false
 }
