@@ -208,3 +208,15 @@ variable "aws-efs-csi-driver" {
   type        = bool
   default     = false
 }
+
+variable "vpc_id" {
+  description = "VPC id"
+  type        = string
+  default     = ""
+}
+
+variable "security_additional" {
+  description = "Additional security grupo cluster"
+  type        = bool
+  default     = false
+}

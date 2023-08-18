@@ -40,42 +40,19 @@ module "vpc" {
 
 ### EKS
 
-##SG_EKS
-module "sg-cluster" {
-  source = "github.com/Emerson89/terraform-modules.git//sg?ref=main"
-
-  sgname      = "sgcluster"
-  environment = local.environment
-  vpc_id      = module.vpc.vpc_id
-
-  ingress_with_cidr_blocks = local.ingress_cluster_api
-
-  tags = local.tags
-}
-
-module "sg-node" {
-  source = "github.com/Emerson89/terraform-modules.git//sg?ref=main"
-
-  sgname                   = "sgnode"
-  environment              = local.environment
-  vpc_id                   = module.vpc.vpc_id
-  source_security_group_id = module.sg-cluster.sg_id
-
-  ingress_with_source_security_group = local.ingress_node
-
-  tags = local.tags
-}
-
 module "eks" {
   source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.1"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
-  security_group_ids      = [module.sg-cluster.sg_id]
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
+
+  ## Additional security-group cluster
+  security_additional = false
+  vpc_id              = module.vpc.vpc_id
 
   private_subnet = module.vpc.private_ids
 
@@ -143,21 +120,6 @@ module "eks" {
         value = "NoSchedule"
       }
     ]
-  }
-
-  ## CUSTOM_HELM
-
-  custom_helm = {
-    aws-secrets-manager = {
-      "name"             = "aws-secrets-manager"
-      "namespace"        = "kube-system"
-      "repository"       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
-      "chart"            = "secrets-store-csi-driver-provider-aws"
-      "version"          = "" ## When empty, the latest version will be installed
-      "create_namespace" = false
-
-      "values" = [] ## When empty, default values will be used
-    }
   }
 
   ## NODES
