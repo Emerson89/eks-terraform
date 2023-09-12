@@ -82,12 +82,6 @@ variable "aws-load-balancer-controller" {
   default     = false
 }
 
-variable "aws-load-balancer-controller" {
-  description = "Install release helm controller alb"
-  type        = bool
-  default     = false
-}
-
 variable "external-dns" {
   description = "Install release helm external"
   type        = bool

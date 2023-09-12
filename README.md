@@ -76,6 +76,12 @@ module "eks" {
   #  })]
   #}
 
+  ## Controller ingress-nginx
+  ingress-nginx = false
+  
+  ## Cert-manager
+  cert-manager = false
+
   ## External DNS 
   external-dns = false
 
