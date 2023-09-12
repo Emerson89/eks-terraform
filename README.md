@@ -26,6 +26,8 @@ Some of the addon/controller policies that are currently supported include:
 - [External DNS](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
 - [Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/README.md)
 - [Metrics-Server](https://github.com/helm/charts/tree/master/stable/metrics-server)
+- [Ingress-nginx](https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx)
+- [cert-manager](https://github.com/cert-manager/cert-manager/tree/master/deploy/charts/cert-manager)
 
 ### Addons EKS 
 
@@ -39,7 +41,7 @@ Some of the addon/controller policies that are currently supported include:
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.1"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.2"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -227,7 +229,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.1"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.2"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.23"

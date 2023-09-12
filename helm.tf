@@ -5,6 +5,8 @@ locals {
   name_metrics-server = "metrics-server"
   name_ebs            = "aws-ebs-csi-driver"
   name_efs            = "aws-efs-csi-driver"
+  name_ingress_nginx  = "ingress-nginx"
+  name_cert-manager   = "cert-manager"
 
 }
 
@@ -27,6 +29,57 @@ provider "helm" {
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
+
+## Ingress-nginx
+
+module "ingress-helm" {
+  source = "./modules/helm"
+
+  count = var.ingress-nginx ? 1 : 0
+
+  helm_release = {
+
+    name       = try(var.custom_values_nginx["name"], local.name_ingress_nginx)
+    namespace  = try(var.custom_values_nginx["namespace"], "ingress-nginx")
+    repository = "https://kubernetes.github.io/ingress-nginx"
+    chart      = "ingress-nginx"
+
+    values = try(var.custom_values_nginx["values"], [])
+
+  }
+
+  set = try(var.custom_values_nginx["set"], {})
+
+  depends_on = [
+    module.nodes
+  ]
+
+}
+
+## Certmanager
+module "cert-helm" {
+  source = "./modules/helm"
+
+  count = var.cert-manager ? 1 : 0
+
+  helm_release = {
+
+    name       = try(var.custom_values_nginx["name"], local.name_cert_manager)
+    namespace  = try(var.custom_values_nginx["namespace"], "cert-manager")
+    repository = "https://charts.jetstack.io"
+    chart      = "cert-manager"
+
+    values = try(var.custom_values_cert_manager["values"], [file("${path.module}/templates/values-cert.yaml")])
+
+  }
+
+  set = try(var.custom_values_cert_manager["set"], {})
+
+  depends_on = [
+    module.nodes
+  ]
+
+}
 
 ## EFS
 

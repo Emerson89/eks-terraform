@@ -41,7 +41,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.1"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.2"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -63,6 +63,12 @@ module "eks" {
   create_core    = false
   create_vpc_cni = false
   create_proxy   = false
+
+  ## Controller ingress-nginx
+  ingress-nginx = false
+  
+  ## Cert-manager
+  cert-manager = false
 
   ## EFS controller
   aws-efs-csi-driver = false

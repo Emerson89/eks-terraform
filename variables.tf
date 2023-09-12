@@ -10,6 +10,18 @@ variable "domain" {
   default     = ""
 }
 
+variable "custom_values_cert_manager" {
+  description = "Custom controler cert-manager a Release is an instance of a chart running in a Kubernetes cluster"
+  type        = any
+  default     = {}
+}
+
+variable "custom_values_nginx" {
+  description = "Custom controler ingress-nginx a Release is an instance of a chart running in a Kubernetes cluster"
+  type        = any
+  default     = {}
+}
+
 variable "custom_helm" {
   description = "Custom a Release is an instance of a chart running in a Kubernetes cluster."
   type        = map(any)
@@ -48,6 +60,24 @@ variable "custom_values_metrics-server" {
 
 variable "aws-ebs-csi-driver" {
   description = "Install release helm controller ebs"
+  type        = bool
+  default     = false
+}
+
+variable "ingress-nginx" {
+  description = "Install release helm controller ingress-nginx"
+  type        = bool
+  default     = false
+}
+
+variable "cert-manager" {
+  description = "Install release helm controller cert-manager"
+  type        = bool
+  default     = false
+}
+
+variable "aws-load-balancer-controller" {
+  description = "Install release helm controller alb"
   type        = bool
   default     = false
 }
