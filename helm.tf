@@ -6,7 +6,7 @@ locals {
   name_ebs            = "aws-ebs-csi-driver"
   name_efs            = "aws-efs-csi-driver"
   name_ingress_nginx  = "ingress-nginx"
-  name_cert-manager   = "cert-manager"
+  name_cert_manager   = "cert-manager"
 
 }
 
