@@ -39,10 +39,11 @@ module "ingress-helm" {
 
   helm_release = {
 
-    name       = try(var.custom_values_nginx["name"], local.name_ingress_nginx)
-    namespace  = try(var.custom_values_nginx["namespace"], "ingress-nginx")
-    repository = "https://kubernetes.github.io/ingress-nginx"
-    chart      = "ingress-nginx"
+    name             = try(var.custom_values_nginx["name"], local.name_ingress_nginx)
+    namespace        = try(var.custom_values_nginx["namespace"], "ingress-nginx")
+    repository       = "https://kubernetes.github.io/ingress-nginx"
+    chart            = "ingress-nginx"
+    create_namespace = true
 
     values = try(var.custom_values_nginx["values"], [])
 
@@ -64,10 +65,11 @@ module "cert-helm" {
 
   helm_release = {
 
-    name       = try(var.custom_values_nginx["name"], local.name_cert_manager)
-    namespace  = try(var.custom_values_nginx["namespace"], "cert-manager")
-    repository = "https://charts.jetstack.io"
-    chart      = "cert-manager"
+    name             = try(var.custom_values_nginx["name"], local.name_cert_manager)
+    namespace        = try(var.custom_values_nginx["namespace"], "cert-manager")
+    repository       = "https://charts.jetstack.io"
+    chart            = "cert-manager"
+    create_namespace = true
 
     values = try(var.custom_values_cert_manager["values"], [file("${path.module}/templates/values-cert.yaml")])
 
