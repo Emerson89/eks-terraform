@@ -14,7 +14,7 @@ locals {
 
 #### VPC
 module "vpc" {
-  source = "github.com/Emerson89/terraform-modules.git//vpc?ref=main"
+  source = "github.com/Emerson89/vpc-aws-terraform.git?ref=v1.0.0"
 
   name                 = "vpc-k8s"
   cidr_block           = "10.0.0.0/16"
