@@ -8,7 +8,7 @@ data "aws_iam_policy_document" "this" {
     condition {
       test     = each.value.string
       variable = "${replace("${each.value.openid_url}", "https://", "")}:sub"
-      values   = ["system:serviceaccount:kube-system:${each.value.serviceaccount}"]
+      values   = ["system:serviceaccount:${each.value.namespace}:${each.value.serviceaccount}"]
     }
 
     condition {
@@ -29,6 +29,15 @@ resource "aws_iam_role" "this" {
 
   assume_role_policy = data.aws_iam_policy_document.this[each.key].json
   name               = each.key
+
+  tags = merge(
+    {
+      "Name"     = each.key
+      "Platform" = "IAM"
+      "Type"     = "role"
+    },
+    var.tags,
+  )
 }
 
 resource "aws_iam_role_policy" "this" {

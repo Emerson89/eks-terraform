@@ -28,6 +28,7 @@ Some of the addon/controller policies that are currently supported include:
 - [Metrics-Server](https://github.com/helm/charts/tree/master/stable/metrics-server)
 - [Ingress-nginx](https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx)
 - [cert-manager](https://github.com/cert-manager/cert-manager/tree/master/deploy/charts/cert-manager)
+- [velero](https://github.com/vmware-tanzu/helm-charts/tree/main/charts/velero)
 
 ### Addons EKS 
 
@@ -41,15 +42,18 @@ Some of the addon/controller policies that are currently supported include:
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.2"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.3"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
-  security_group_ids      = [module.sg-cluster.sg_id]
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
+  
+  ## Additional security-group cluster
+  security_additional = false
+  vpc_id              = module.vpc.vpc_id
 
   private_subnet = module.vpc.private_ids
 
@@ -75,6 +79,9 @@ module "eks" {
   #    cluster_name = "${local.cluster_name}"
   #  })]
   #}
+  
+  ## Velero
+  velero = false
 
   ## Controller ingress-nginx
   ingress-nginx = false
@@ -235,12 +242,11 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.2"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.3"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.23"
   subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
-  security_group_ids      = ["sg-abcabc123"]
   environment             = "hmg"
   endpoint_private_access = true
   endpoint_public_access  = true
@@ -288,12 +294,14 @@ module "eks" {
 
 ## For other examples access
 
+
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_alb"></a> [alb](#module\_alb) | ./modules/helm | n/a |
 | <a name="module_asg"></a> [asg](#module\_asg) | ./modules/helm | n/a |
+| <a name="module_cert-helm"></a> [cert-helm](#module\_cert-helm) | ./modules/helm | n/a |
 | <a name="module_core"></a> [core](#module\_core) | ./modules/addons | n/a |
 | <a name="module_custom"></a> [custom](#module\_custom) | ./modules/helm | n/a |
 | <a name="module_ebs"></a> [ebs](#module\_ebs) | ./modules/addons | n/a |
@@ -304,9 +312,12 @@ module "eks" {
 | <a name="module_iam-asg"></a> [iam-asg](#module\_iam-asg) | ./modules/iam | n/a |
 | <a name="module_iam-ebs"></a> [iam-ebs](#module\_iam-ebs) | ./modules/iam | n/a |
 | <a name="module_iam-efs"></a> [iam-efs](#module\_iam-efs) | ./modules/iam | n/a |
+| <a name="module_iam-velero"></a> [iam-velero](#module\_iam-velero) | ./modules/iam | n/a |
+| <a name="module_ingress-helm"></a> [ingress-helm](#module\_ingress-helm) | ./modules/helm | n/a |
 | <a name="module_metrics-server"></a> [metrics-server](#module\_metrics-server) | ./modules/helm | n/a |
 | <a name="module_nodes"></a> [nodes](#module\_nodes) | ./modules/nodes | n/a |
 | <a name="module_proxy"></a> [proxy](#module\_proxy) | ./modules/addons | n/a |
+| <a name="module_velero"></a> [velero](#module\_velero) | ./modules/helm | n/a |
 | <a name="module_vpc-cni"></a> [vpc-cni](#module\_vpc-cni) | ./modules/addons | n/a |
 
 ## Resources
@@ -326,8 +337,10 @@ module "eks" {
 | [aws_iam_role_policy_attachment.AmazonEKSServicePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.ElasticLoadBalancingReadOnly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.eks_nodes_autoscaler_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.route53_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_s3_bucket.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_security_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group_rule.egress_rule](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.with_source_security_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
@@ -347,6 +360,7 @@ module "eks" {
 | <a name="input_aws-ebs-csi-driver"></a> [aws-ebs-csi-driver](#input\_aws-ebs-csi-driver) | Install release helm controller ebs | `bool` | `false` | no |
 | <a name="input_aws-efs-csi-driver"></a> [aws-efs-csi-driver](#input\_aws-efs-csi-driver) | Install release helm controller efs | `bool` | `false` | no |
 | <a name="input_aws-load-balancer-controller"></a> [aws-load-balancer-controller](#input\_aws-load-balancer-controller) | Install release helm controller alb | `bool` | `false` | no |
+| <a name="input_cert-manager"></a> [cert-manager](#input\_cert-manager) | Install release helm controller cert-manager | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name cluster | `string` | `"k8s"` | no |
 | <a name="input_create_aws_auth_configmap"></a> [create\_aws\_auth\_configmap](#input\_create\_aws\_auth\_configmap) | Create configmap aws-auth | `bool` | `false` | no |
 | <a name="input_create_core"></a> [create\_core](#input\_create\_core) | Install addons core | `bool` | `false` | no |
@@ -356,10 +370,13 @@ module "eks" {
 | <a name="input_custom_helm"></a> [custom\_helm](#input\_custom\_helm) | Custom a Release is an instance of a chart running in a Kubernetes cluster. | `map(any)` | `{}` | no |
 | <a name="input_custom_values_alb"></a> [custom\_values\_alb](#input\_custom\_values\_alb) | Custom controler alb a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_asg"></a> [custom\_values\_asg](#input\_custom\_values\_asg) | Custom controller asg a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
+| <a name="input_custom_values_cert_manager"></a> [custom\_values\_cert\_manager](#input\_custom\_values\_cert\_manager) | Custom controler cert-manager a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_ebs"></a> [custom\_values\_ebs](#input\_custom\_values\_ebs) | Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_efs"></a> [custom\_values\_efs](#input\_custom\_values\_efs) | Custom controler efs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_external-dns"></a> [custom\_values\_external-dns](#input\_custom\_values\_external-dns) | Custom external-dns a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_metrics-server"></a> [custom\_values\_metrics-server](#input\_custom\_values\_metrics-server) | Custom metrics-server a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
+| <a name="input_custom_values_nginx"></a> [custom\_values\_nginx](#input\_custom\_values\_nginx) | Custom controler ingress-nginx a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
+| <a name="input_custom_values_velero"></a> [custom\_values\_velero](#input\_custom\_values\_velero) | Custom velero a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_domain"></a> [domain](#input\_domain) | Domain used helm External dns | `string` | `""` | no |
 | <a name="input_enabled_cluster_log_types"></a> [enabled\_cluster\_log\_types](#input\_enabled\_cluster\_log\_types) | List of the desired control plane logging to enable. For more information, see Amazon EKS Control Plane Logging. | `list(string)` | `[]` | no |
 | <a name="input_endpoint_private_access"></a> [endpoint\_private\_access](#input\_endpoint\_private\_access) | Endpoint access private | `bool` | `false` | no |
@@ -367,6 +384,8 @@ module "eks" {
 | <a name="input_environment"></a> [environment](#input\_environment) | Env tags | `string` | `null` | no |
 | <a name="input_external-dns"></a> [external-dns](#input\_external-dns) | Install release helm external | `bool` | `false` | no |
 | <a name="input_filesystem_id"></a> [filesystem\_id](#input\_filesystem\_id) | Filesystem used helm efs | `string` | `"fs-92107410"` | no |
+| <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Boolean that indicates all objects (including any locked objects) should be deleted from the bucket when the bucket is destroyed so that the bucket can be destroyed without error | `bool` | `false` | no |
+| <a name="input_ingress-nginx"></a> [ingress-nginx](#input\_ingress-nginx) | Install release helm controller ingress-nginx | `bool` | `false` | no |
 | <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | Version kubernetes | `string` | `"1.23"` | no |
 | <a name="input_manage_aws_auth_configmap"></a> [manage\_aws\_auth\_configmap](#input\_manage\_aws\_auth\_configmap) | Manager configmap aws-auth | `bool` | `false` | no |
 | <a name="input_mapAccounts"></a> [mapAccounts](#input\_mapAccounts) | List of accounts maps to add to the aws-auth configmap | `list(any)` | `[]` | no |
@@ -379,6 +398,7 @@ module "eks" {
 | <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | Security group ids | `list(any)` | `[]` | no |
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | Subnet private | `list(any)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(string)` | `{}` | no |
+| <a name="input_velero"></a> [velero](#input\_velero) | Install release helm velero | `bool` | `false` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id | `string` | `""` | no |
 
 ## Outputs

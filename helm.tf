@@ -7,6 +7,7 @@ locals {
   name_efs            = "aws-efs-csi-driver"
   name_ingress_nginx  = "ingress-nginx"
   name_cert_manager   = "cert-manager"
+  name_velero         = "velero"
 
 }
 
@@ -29,6 +30,67 @@ provider "helm" {
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
+
+## Velero
+
+resource "aws_s3_bucket" "this" {
+  count = var.velero ? 1 : 0
+
+  bucket_prefix = "velero-"
+  force_destroy = var.force_destroy
+
+  tags = merge(
+    {
+      "Name"     = format("%s-%s", "velero", var.environment)
+      "Platform" = "Storage"
+      "Type"     = "S3"
+    },
+    var.tags,
+  )
+}
+
+module "iam-velero" {
+  source = "./modules/iam"
+
+  count = var.velero ? 1 : 0
+
+  iam_roles = {
+    "velero-${var.environment}" = {
+      "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
+      "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
+      "serviceaccount" = "velero"
+      "string"         = "StringEquals"
+      "namespace"      = "velero"
+      "policy" = templatefile("${path.module}/templates/policy-velero.json", {
+        bucket_name = "${aws_s3_bucket.this[0].bucket}"
+      })
+    }
+  }
+}
+
+module "velero" {
+  source = "./modules/helm"
+
+  count = var.velero ? 1 : 0
+
+  helm_release = {
+
+    name             = try(var.custom_values_velero["name"], local.name_velero)
+    namespace        = try(var.custom_values_velero["namespace"], "velero")
+    repository       = "https://vmware-tanzu.github.io/helm-charts"
+    chart            = "velero"
+    create_namespace = true
+
+    values = try(var.custom_values_velero["values"], [templatefile("${path.module}/templates/values-velero.yaml", {
+      aws_region     = "${data.aws_region.current.name}"
+      bucket_name    = "${aws_s3_bucket.this[0].bucket}"
+      aws_arn_velero = module.iam-velero[0].arn[0]
+    })])
+
+  }
+
+  set = try(var.custom_values_velero["set"], {})
+}
 
 ## Ingress-nginx
 
@@ -96,6 +158,7 @@ module "iam-efs" {
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
       "serviceaccount" = "efs-csi-*"
       "string"         = "StringLike"
+      "namespace"      = "kube-system"
       "policy"         = file("${path.module}/templates/policy-efs.json")
     }
   }
@@ -141,6 +204,7 @@ module "iam-ebs" {
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
       "serviceaccount" = "ebs-csi-controller-sa"
       "string"         = "StringEquals"
+      "namespace"      = "kube-system"
       "policy"         = file("${path.module}/templates/policy-ebs.json")
     }
   }
@@ -186,6 +250,7 @@ module "iam-alb" {
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
       "serviceaccount" = "aws-load-balancer-controller"
       "string"         = "StringEquals"
+      "namespace"      = "kube-system"
       "policy"         = file("${path.module}/templates/policy-alb.json")
     }
   }
@@ -232,6 +297,7 @@ module "iam-asg" {
       "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
       "serviceaccount" = "cluster-autoscaler-aws-cluster-autoscaler"
       "string"         = "StringEquals"
+      "namespace"      = "kube-system"
       "policy" = templatefile("${path.module}/templates/policy-asg.json", {
         cluster_name = "${aws_eks_cluster.eks_cluster.name}"
       })

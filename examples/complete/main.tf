@@ -41,7 +41,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.2"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.3"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -64,9 +64,12 @@ module "eks" {
   create_vpc_cni = false
   create_proxy   = false
 
+  ## Velero
+  velero = false
+
   ## Controller ingress-nginx
   ingress-nginx = false
-  
+
   ## Cert-manager
   cert-manager = false
 
@@ -139,10 +142,11 @@ module "eks" {
       min_size                = 1
       instance_types          = ["t3.medium"]
       disk_size               = 20
+      capacity_type           = "SPOT"
     }
     infra-lt = {
-      create_node           = true
-      launch_create         = true
+      create_node           = false
+      launch_create         = false
       name_lt               = "lt"
       node_name             = "infra-lt"
       cluster_version       = "1.24"
