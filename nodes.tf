@@ -125,7 +125,14 @@ module "nodes" {
   create_fargate       = try(each.value.create_fargate, false)
   fargate_profile_name = try(each.value.fargate_profile_name, "")
   selectors            = try(each.value.selectors, [])
-
+  
+  depends_on = [
+    aws_iam_role_policy_attachment.AmazonEKSServicePolicy,
+    aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
+  ]
+  
   tags = var.tags
 }
 

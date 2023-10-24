@@ -10,6 +10,16 @@ locals {
     Environment = "hmg"
   }
   cluster_name = "k8s"
+  
+  public_subnets_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared",
+    "kubernetes.io/role/elb"                      = 1
+  }
+
+  private_subnets_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared",
+    "kubernetes.io/role/internal-elb"             = 1
+  }
 }
 
 #### VPC
@@ -41,7 +51,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.3"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.4"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -130,8 +140,33 @@ module "eks" {
       }
     ]
   }
+  
+  ## CUSTOM_HELM
 
-  ## NODES
+  custom_helm = {
+    aws-secrets-manager = {
+      name             = "aws-secrets-manager"
+      namespace        = "kube-system"
+      repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+      chart            = "secrets-store-csi-driver-provider-aws"
+      version          = "0.3.4"
+      create_namespace = false
+      #values = file("${path.module}/values.yaml")
+      values           = []
+    }
+    secret-csi = {
+      name             = "secret-csi"
+      namespace        = "kube-system"
+      repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
+      chart            = "secrets-store-csi-driver"
+      version          = "v1.3.4"
+      create_namespace = false
+      #values = file("${path.module}/values.yaml")
+      values           = []
+    }
+  }
+
+  ## GROUPS NODES
   nodes = {
     infra = {
       create_node             = true

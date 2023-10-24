@@ -42,7 +42,7 @@ Some of the addon/controller policies that are currently supported include:
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.3"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.4"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -136,14 +136,24 @@ module "eks" {
 
   custom_helm = {
     aws-secrets-manager = {
-      "name"             = "aws-secrets-manager"
-      "namespace"        = "kube-system"
-      "repository"       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
-      "chart"            = "secrets-store-csi-driver-provider-aws"
-      "version"          = "" ## When empty, the latest version will be installed
-      "create_namespace" = false
-
-      "values" = [] ## When empty, default values will be used
+      name             = "aws-secrets-manager"
+      namespace        = "kube-system"
+      repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+      chart            = "secrets-store-csi-driver-provider-aws"
+      version          = "0.3.4"
+      create_namespace = false
+      #values = file("${path.module}/values.yaml")
+      values           = []
+    }
+    secret-csi = {
+      name             = "secret-csi"
+      namespace        = "kube-system"
+      repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
+      chart            = "secrets-store-csi-driver"
+      version          = "v1.3.4"
+      create_namespace = false
+      #values = file("${path.module}/values.yaml")
+      values           = []
     }
   }
 
@@ -242,7 +252,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.3"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.4"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.23"

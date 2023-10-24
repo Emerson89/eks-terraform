@@ -19,7 +19,6 @@ resource "aws_eks_cluster" "eks_cluster" {
   role_arn = aws_iam_role.master.arn
   version  = var.kubernetes_version
 
-  depends_on                = [aws_cloudwatch_log_group.this]
   enabled_cluster_log_types = var.enabled_cluster_log_types
 
   vpc_config {
@@ -29,6 +28,12 @@ resource "aws_eks_cluster" "eks_cluster" {
     subnet_ids              = var.subnet_ids
 
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.AmazonEKSClusterPolicy,
+    aws_iam_role_policy_attachment.AmazonEKSVPCResourceController,
+    aws_cloudwatch_log_group.this
+  ]
 
   tags = merge(
     {
