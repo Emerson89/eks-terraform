@@ -12,6 +12,7 @@ module "fargate-profile" {
   private_subnet = "subnet-abdabdabd123"
 
   create_fargate = true
+  fargate_auth   = true
   selectors = [
     {
       namespace = "kube-system"

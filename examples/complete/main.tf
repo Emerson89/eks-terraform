@@ -10,7 +10,7 @@ locals {
     Environment = "hmg"
   }
   cluster_name = "k8s"
-  
+
   public_subnets_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared",
     "kubernetes.io/role/elb"                      = 1
@@ -51,7 +51,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.4"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.5"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -59,6 +59,25 @@ module "eks" {
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
+
+  ## Manager users, roles, accounts
+  mapRoles = [
+    {
+      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapUsers = [
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapAccounts = [
+    "777777777777",
+  ]
 
   ## Additional security-group cluster
   security_additional = false
@@ -140,7 +159,7 @@ module "eks" {
       }
     ]
   }
-  
+
   ## CUSTOM_HELM
 
   custom_helm = {
@@ -152,7 +171,7 @@ module "eks" {
       version          = "0.3.4"
       create_namespace = false
       #values = file("${path.module}/values.yaml")
-      values           = []
+      values = []
     }
     secret-csi = {
       name             = "secret-csi"
@@ -162,7 +181,7 @@ module "eks" {
       version          = "v1.3.4"
       create_namespace = false
       #values = file("${path.module}/values.yaml")
-      values           = []
+      values = []
     }
   }
 
@@ -179,6 +198,7 @@ module "eks" {
       disk_size               = 20
       capacity_type           = "SPOT"
     }
+
     infra-lt = {
       create_node           = false
       launch_create         = false
@@ -208,6 +228,7 @@ module "eks" {
     infra-fargate = {
       create_node          = false
       create_fargate       = false
+      fargate_auth         = false
       fargate_profile_name = "infra-fargate"
       selectors = [
         {

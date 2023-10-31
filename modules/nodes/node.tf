@@ -70,7 +70,7 @@ resource "aws_eks_fargate_profile" "this" {
 
   cluster_name           = var.cluster_name
   fargate_profile_name   = var.fargate_profile_name
-  pod_execution_role_arn = try(aws_iam_role.this[0].arn, null)
+  pod_execution_role_arn = var.pod_execution_role_arn
   subnet_ids             = var.private_subnet
 
   dynamic "selector" {
@@ -81,28 +81,4 @@ resource "aws_eks_fargate_profile" "this" {
       labels    = lookup(selector.value, "labels", {})
     }
   }
-}
-
-resource "aws_iam_role" "this" {
-  count = var.create_fargate ? 1 : 0
-
-  name = "eks-fargate-profile-${var.environment}"
-
-  assume_role_policy = jsonencode({
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "eks-fargate-pods.amazonaws.com"
-      }
-    }]
-    Version = "2012-10-17"
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "AmazonEKSFargatePodExecutionRolePolicy" {
-  count = var.create_fargate ? 1 : 0
-
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
-  role       = try(aws_iam_role.this[0].name, null)
 }

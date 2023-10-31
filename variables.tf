@@ -230,7 +230,7 @@ variable "create_aws_auth_configmap" {
 variable "manage_aws_auth_configmap" {
   description = "Manager configmap aws-auth"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "filesystem_id" {
@@ -259,6 +259,12 @@ variable "vpc_id" {
 
 variable "security_additional" {
   description = "Additional security grupo cluster"
+  type        = bool
+  default     = false
+}
+
+variable "fargate_auth" {
+  description = "Auth role fargate profile"
   type        = bool
   default     = false
 }

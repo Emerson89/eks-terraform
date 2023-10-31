@@ -311,3 +311,8 @@ variable "iam_instance_profile" {
   type        = string
   default     = null
 }
+
+variable "pod_execution_role_arn" {
+  type    = string
+  default = ""
+}

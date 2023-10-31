@@ -9,6 +9,15 @@ locals {
           "system:nodes",
         ]
       },
+      var.fargate_auth ? {
+        rolearn  = "${aws_iam_role.this[0].arn}"
+        username = "system:node:{{SessionName}}"
+        groups = [
+          "system:bootstrappers",
+          "system:nodes",
+          "system:node-proxier"
+        ]
+      } : null
       ],
     var.mapRoles))
     mapUsers    = yamlencode(var.mapUsers)

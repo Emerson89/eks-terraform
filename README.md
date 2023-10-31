@@ -1,5 +1,3 @@
-# EKS Terraform 
-
 ## Requirements
 
 | Name | Version |
@@ -39,10 +37,10 @@ Some of the addon/controller policies that are currently supported include:
 
 #
 ## Usage
-
+#
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.4"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.5"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -51,6 +49,25 @@ module "eks" {
   endpoint_private_access = true
   endpoint_public_access  = true
   
+  ## Manager users, roles, accounts
+  mapRoles = [
+    {
+      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapUsers = [
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapAccounts = [
+    "777777777777",
+  ]
+
   ## Additional security-group cluster
   security_additional = false
   vpc_id              = module.vpc.vpc_id
@@ -197,6 +214,7 @@ module "eks" {
 
     infra-fargate = {
       create_fargate       = true
+      fargate_auth         = true
       fargate_profile_name = "infra-fargate"
       selectors = [
         {
@@ -252,7 +270,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.4"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.5"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.23"
@@ -262,7 +280,7 @@ module "eks" {
   endpoint_public_access  = true
   
   ##Create aws-auth
-  create_aws_auth_configmap = true
+  create_aws_auth_configmap = true ## Necessary for self-management nodes
 
   nodes = {
     infra-asg = {
@@ -302,8 +320,52 @@ module "eks" {
 }
 ```
 
-## For other examples access
+***Manager users, roles, accounts***
 
+```hcl
+  mapRoles = [
+    {
+      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapUsers = [
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapAccounts = [
+    "777777777777",
+  ]
+```
+
+***Fargate profile***
+```hcl
+nodes = {
+  infra-fargate = {
+    create_fargate       = true
+    fargate_auth         = true
+    fargate_profile_name = "infra-fargate"
+    selectors = [
+      {
+        namespace = "kube-system"
+        labels = {
+          k8s-app = "kube-dns"
+        }
+      },
+      {
+        namespace = "default"
+      }
+    ]
+  }
+}
+```  
+#
+## For other examples access
+#
 
 ## Modules
 
@@ -342,9 +404,12 @@ module "eks" {
 | [aws_iam_policy.route53](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.master](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.node](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSClusterPolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.AmazonEKSFargatePodExecutionRolePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSServicePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.AmazonEKSVPCResourceController](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.ElasticLoadBalancingReadOnly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -393,11 +458,12 @@ module "eks" {
 | <a name="input_endpoint_public_access"></a> [endpoint\_public\_access](#input\_endpoint\_public\_access) | Endpoint access public | `bool` | `true` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Env tags | `string` | `null` | no |
 | <a name="input_external-dns"></a> [external-dns](#input\_external-dns) | Install release helm external | `bool` | `false` | no |
+| <a name="input_fargate_auth"></a> [fargate\_auth](#input\_fargate\_auth) | Auth role fargate profile | `bool` | `false` | no |
 | <a name="input_filesystem_id"></a> [filesystem\_id](#input\_filesystem\_id) | Filesystem used helm efs | `string` | `"fs-92107410"` | no |
 | <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Boolean that indicates all objects (including any locked objects) should be deleted from the bucket when the bucket is destroyed so that the bucket can be destroyed without error | `bool` | `false` | no |
 | <a name="input_ingress-nginx"></a> [ingress-nginx](#input\_ingress-nginx) | Install release helm controller ingress-nginx | `bool` | `false` | no |
 | <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | Version kubernetes | `string` | `"1.23"` | no |
-| <a name="input_manage_aws_auth_configmap"></a> [manage\_aws\_auth\_configmap](#input\_manage\_aws\_auth\_configmap) | Manager configmap aws-auth | `bool` | `false` | no |
+| <a name="input_manage_aws_auth_configmap"></a> [manage\_aws\_auth\_configmap](#input\_manage\_aws\_auth\_configmap) | Manager configmap aws-auth | `bool` | `true` | no |
 | <a name="input_mapAccounts"></a> [mapAccounts](#input\_mapAccounts) | List of accounts maps to add to the aws-auth configmap | `list(any)` | `[]` | no |
 | <a name="input_mapRoles"></a> [mapRoles](#input\_mapRoles) | List of role maps to add to the aws-auth configmap | `list(any)` | `[]` | no |
 | <a name="input_mapUsers"></a> [mapUsers](#input\_mapUsers) | List of user maps to add to the aws-auth configmap | `list(any)` | `[]` | no |
