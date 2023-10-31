@@ -61,12 +61,44 @@ module "eks" {
     {
       userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
       username = "test"
-      groups   = ["system:masters"]
+      groups   = ["admin"]
     }
   ]
   mapAccounts = [
     "777777777777",
   ]
+  
+  ## Manager RBAC
+  rbac = {
+    admin = {
+      metadata = [{
+        name = "adm"
+      }]
+      rules = [{
+        api_groups = ["*"]
+        verbs      = ["*"]
+        resources  = ["*"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "adm"
+      }]
+    }
+    read-only = {
+      metadata = [{
+        name = "read-only"
+      }]
+      rules = [{
+        api_groups = ["*"]
+        resources  = ["*"]
+        verbs      = ["get", "list", "watch"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "read-only"
+      }]
+    }
+  }
 
   ## Additional security-group cluster
   security_additional = false
@@ -266,6 +298,100 @@ module "eks" {
 }
 ```
 
+***Manager users, roles, accounts***
+
+```hcl
+  mapRoles = [
+    {
+      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapUsers = [
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
+      username = "test"
+      groups   = ["system:masters"]
+    }
+  ]
+  mapAccounts = [
+    "777777777777",
+  ]
+```
+
+***Manager rbac permissions***
+
+```hcl
+  mapRoles = [
+    {
+      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
+      username = "test"
+      groups   = ["read-only"]
+    }
+  ]
+  mapUsers = [
+    {
+      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
+      username = "test"
+      groups   = ["adm"]
+    }
+  ]
+  rbac = {
+    admin = {
+      metadata = [{
+        name = "adm"
+      }]
+      rules = [{
+        api_groups = ["*"]
+        verbs      = ["*"]
+        resources  = ["*"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "adm"
+      }]
+    }
+    read-only = {
+      metadata = [{
+        name = "read-only"
+      }]
+      rules = [{
+        api_groups = ["*"]
+        resources  = ["*"]
+        verbs      = ["get", "list", "watch"]
+      }]
+      subjects = [{
+        kind = "Group"
+        name = "read-only"
+      }]
+    }
+  }
+```
+
+*Service account*
+
+```hcl
+rbac = {
+    ServiceAccount = {
+      service-account-create = true
+      metadata = [{
+        name = "svcaccount"
+      }]
+      rules = [{
+        api_groups = ["*"]
+        resources  = ["*"]
+        verbs      = ["get", "list", "watch"]
+      }]
+      subjects = [{
+        kind      = "ServiceAccount"
+        name      = "svcaccount"
+        namespace = "kube-system"
+      }]
+    }
+  }
+```
+
 ***Only Self manager nodes***
 
 ```hcl
@@ -320,29 +446,8 @@ module "eks" {
 }
 ```
 
-***Manager users, roles, accounts***
-
-```hcl
-  mapRoles = [
-    {
-      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
-      username = "test"
-      groups   = ["system:masters"]
-    }
-  ]
-  mapUsers = [
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
-      username = "test"
-      groups   = ["system:masters"]
-    }
-  ]
-  mapAccounts = [
-    "777777777777",
-  ]
-```
-
 ***Fargate profile***
+
 ```hcl
 nodes = {
   infra-fargate = {
@@ -389,6 +494,7 @@ nodes = {
 | <a name="module_metrics-server"></a> [metrics-server](#module\_metrics-server) | ./modules/helm | n/a |
 | <a name="module_nodes"></a> [nodes](#module\_nodes) | ./modules/nodes | n/a |
 | <a name="module_proxy"></a> [proxy](#module\_proxy) | ./modules/addons | n/a |
+| <a name="module_rbac"></a> [rbac](#module\_rbac) | ./modules/rbac | n/a |
 | <a name="module_velero"></a> [velero](#module\_velero) | ./modules/helm | n/a |
 | <a name="module_vpc-cni"></a> [vpc-cni](#module\_vpc-cni) | ./modules/addons | n/a |
 
@@ -470,6 +576,7 @@ nodes = {
 | <a name="input_metrics-server"></a> [metrics-server](#input\_metrics-server) | Install release helm metrics-server | `bool` | `false` | no |
 | <a name="input_nodes"></a> [nodes](#input\_nodes) | Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_private_subnet"></a> [private\_subnet](#input\_private\_subnet) | List subnet nodes | `list(any)` | `[]` | no |
+| <a name="input_rbac"></a> [rbac](#input\_rbac) | Map rbac configuration | `any` | `{}` | no |
 | <a name="input_security_additional"></a> [security\_additional](#input\_security\_additional) | Additional security grupo cluster | `bool` | `false` | no |
 | <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | Security group ids | `list(any)` | `[]` | no |
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | Subnet private | `list(any)` | `[]` | no |

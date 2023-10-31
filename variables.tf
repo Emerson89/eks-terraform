@@ -268,3 +268,9 @@ variable "fargate_auth" {
   type        = bool
   default     = false
 }
+
+variable "rbac" {
+  description = "Map rbac configuration"
+  type        = any
+  default     = {}
+}

@@ -60,25 +60,6 @@ module "eks" {
   endpoint_private_access = true
   endpoint_public_access  = true
 
-  ## Manager users, roles, accounts
-  mapRoles = [
-    {
-      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
-      username = "test"
-      groups   = ["system:masters"]
-    }
-  ]
-  mapUsers = [
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
-      username = "test"
-      groups   = ["system:masters"]
-    }
-  ]
-  mapAccounts = [
-    "777777777777",
-  ]
-
   ## Additional security-group cluster
   security_additional = false
   vpc_id              = module.vpc.vpc_id
