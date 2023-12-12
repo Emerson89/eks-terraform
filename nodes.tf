@@ -1,3 +1,7 @@
+data "aws_ssm_parameter" "eks_ami_release_version" {
+  name = "/aws/service/eks/optimized-ami/${aws_eks_cluster.eks_cluster.version}/amazon-linux-2/recommended/release_version"
+}
+
 locals {
   ingress_with_source_security_group = {
     ingress_nodes_ephemeral = {
@@ -91,6 +95,7 @@ module "nodes" {
   disk_size               = try(each.value.disk_size, null)
   capacity_type           = try(each.value.capacity_type, "ON_DEMAND")
   cluster_version_manager = try(each.value.cluster_version_manager, "")
+  release_version         = try(data.aws_ssm_parameter.eks_ami_release_version.value, "")
   create_node             = try(each.value.create_node, false)
 
   labels = try(each.value.labels, {})

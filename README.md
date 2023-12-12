@@ -467,7 +467,14 @@ nodes = {
     ]
   }
 }
-```  
+```
+#
+## For update eks
+
+```
+terraform apply -target module.eks.aws_eks_cluster.eks_cluster
+```
+#
 #
 ## For other examples access
 #

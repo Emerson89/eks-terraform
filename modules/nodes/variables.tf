@@ -8,6 +8,12 @@ variable "use-max-pods" {
   default = false
 }
 
+variable "release_version" {
+  description = "AMI version of the EKS Node Group. Defaults to latest version for Kubernetes version."
+  type        = string
+  default     = ""
+}
+
 variable "taints_lt" {
   description = "Taints to be applied to the launch template"
   type        = string
