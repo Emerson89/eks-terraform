@@ -6,6 +6,7 @@
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.9 |
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.10.1 |
 | <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.20.0 |
+| <a name="requirement_spotinst"></a> [spotinst](#requirement\_spotinst) | >= 1.96.0 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | 4.0.4 |
 
 ## Providers
@@ -40,7 +41,7 @@ Some of the addon/controller policies that are currently supported include:
 #
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.5"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -396,7 +397,7 @@ rbac = {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.5"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.23"
@@ -407,6 +408,7 @@ module "eks" {
   
   ##Create aws-auth
   create_aws_auth_configmap = true ## Necessary for self-management nodes
+  manage_aws_auth_configmap = false
 
   nodes = {
     infra-asg = {
@@ -468,6 +470,45 @@ nodes = {
   }
 }
 ```
+
+***Only Self manager nodes spotinst require create account https://console.spotinst.com/spt/auth/signIn***
+***Configuration provider https://registry.terraform.io/providers/spotinst/spotinst/latest/docs***
+
+```hcl
+module "eks" {
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+
+  cluster_name            = "k8s"
+  kubernetes_version      = "1.24"
+  subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
+  environment             = "hmg"
+  endpoint_private_access = true
+  endpoint_public_access  = true
+  
+  ##Create aws-auth
+  create_aws_auth_configmap = true ## Necessary for self-management nodes
+  manage_aws_auth_configmap = false
+
+  security_additional = true
+  vpc_id              = module.vpc.vpc_id
+
+  ## GROUPS NODES
+  nodes_spot = {
+    spotinst = {
+      create_node_spotinst         = true
+      node_name                    = "spotinst"
+      cluster_version              = "1.24"
+      desired_size                 = 1
+      max_size                     = 3
+      min_size                     = 1
+      volume_type                  = "gp3"
+      volume_size                  = 20
+      preferred_availability_zones = ["us-east-1c"]
+      instance_types_spot          = ["m4.large", "m5.large", "m5a.large", "r4.large", "r5.large", "r5a.large"]
+    }
+  }
+}  
+```
 #
 ## For update eks
 
@@ -499,6 +540,7 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="module_iam-velero"></a> [iam-velero](#module\_iam-velero) | ./modules/iam | n/a |
 | <a name="module_ingress-helm"></a> [ingress-helm](#module\_ingress-helm) | ./modules/helm | n/a |
 | <a name="module_metrics-server"></a> [metrics-server](#module\_metrics-server) | ./modules/helm | n/a |
+| <a name="module_node-spot"></a> [node-spot](#module\_node-spot) | ./modules/nodes-spot | n/a |
 | <a name="module_nodes"></a> [nodes](#module\_nodes) | ./modules/nodes | n/a |
 | <a name="module_proxy"></a> [proxy](#module\_proxy) | ./modules/addons | n/a |
 | <a name="module_rbac"></a> [rbac](#module\_rbac) | ./modules/rbac | n/a |
@@ -519,12 +561,14 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | [aws_iam_role.node](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.AmazonEC2RoleforSSM](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSClusterPolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSFargatePodExecutionRolePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSServicePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSVPCResourceController](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.ElasticLoadBalancingReadOnly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.eks_nodes_autoscaler_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.route53_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -538,6 +582,7 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | [aws_eks_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster) | data source |
 | [aws_eks_cluster_auth.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster_auth) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_ssm_parameter.eks_ami_release_version](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 | [tls_certificate.this](https://registry.terraform.io/providers/hashicorp/tls/4.0.4/docs/data-sources/certificate) | data source |
 
 ## Inputs
@@ -581,7 +626,8 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_mapRoles"></a> [mapRoles](#input\_mapRoles) | List of role maps to add to the aws-auth configmap | `list(any)` | `[]` | no |
 | <a name="input_mapUsers"></a> [mapUsers](#input\_mapUsers) | List of user maps to add to the aws-auth configmap | `list(any)` | `[]` | no |
 | <a name="input_metrics-server"></a> [metrics-server](#input\_metrics-server) | Install release helm metrics-server | `bool` | `false` | no |
-| <a name="input_nodes"></a> [nodes](#input\_nodes) | Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
+| <a name="input_nodes"></a> [nodes](#input\_nodes) | Nodes general | `any` | `{}` | no |
+| <a name="input_nodes_spot"></a> [nodes\_spot](#input\_nodes\_spot) | Nodes spotinst | `any` | `{}` | no |
 | <a name="input_private_subnet"></a> [private\_subnet](#input\_private\_subnet) | List subnet nodes | `list(any)` | `[]` | no |
 | <a name="input_rbac"></a> [rbac](#input\_rbac) | Map rbac configuration | `any` | `{}` | no |
 | <a name="input_security_additional"></a> [security\_additional](#input\_security\_additional) | Additional security grupo cluster | `bool` | `false` | no |

@@ -1,6 +1,6 @@
 provider "aws" {
-  profile = var.profile
-  region  = var.region
+  profile = ""
+  region  = ""
 }
 
 provider "spotinst" {
@@ -64,6 +64,8 @@ module "eks" {
   environment               = local.environment
   endpoint_private_access   = true
   endpoint_public_access    = true
+  create_aws_auth_configmap = true
+  manage_aws_auth_configmap = false
 
   ## Additional security-group cluster
   security_additional = true
@@ -146,127 +148,10 @@ module "eks" {
     ]
   }
 
-  ## CUSTOM_HELM
-
-  custom_helm = {
-    aws-secrets-manager = {
-      name             = "aws-secrets-manager"
-      namespace        = "kube-system"
-      repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
-      chart            = "secrets-store-csi-driver-provider-aws"
-      version          = "0.3.4"
-      create_namespace = false
-      #values = file("${path.module}/values.yaml")
-      values = []
-    }
-    secret-csi = {
-      name             = "secret-csi"
-      namespace        = "kube-system"
-      repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
-      chart            = "secrets-store-csi-driver"
-      version          = "v1.3.4"
-      create_namespace = false
-      #values = file("${path.module}/values.yaml")
-      values = []
-    }
-  }
-
   ## GROUPS NODES
-  nodes = {
-    infra = {
-      create_node             = true
-      node_name               = "infra"
-      cluster_version_manager = "1.24"
-      desired_size            = 1
-      max_size                = 3
-      min_size                = 1
-      instance_types          = ["t3.medium"]
-      disk_size               = 20
-      capacity_type           = "SPOT"
-    }
-
-    infra-lt = {
-      create_node           = false
-      launch_create         = false
-      name_lt               = "lt"
-      node_name             = "infra-lt"
-      cluster_version       = "1.24"
-      desired_size          = 1
-      max_size              = 3
-      min_size              = 1
-      instance_types_launch = "t3.medium"
-      volume-size           = 20
-      volume-type           = "gp3"
-
-      labels = {
-        Environment = "${local.environment}"
-      }
-
-      taints = {
-        dedicated = {
-          key    = "environment"
-          value  = "${local.environment}"
-          effect = "NO_SCHEDULE"
-        }
-      }
-    }
-
-    infra-fargate = {
-      create_node          = false
-      create_fargate       = false
-      fargate_auth         = false
-      fargate_profile_name = "infra-fargate"
-      selectors = [
-        {
-          namespace = "kube-system"
-          labels = {
-            k8s-app = "kube-dns"
-          }
-        },
-        {
-          namespace = "default"
-        }
-      ]
-    }
-    infra-asg = {
-      create_node           = false
-      launch_create         = false
-      asg_create            = false
-      cluster_version       = "1.24"
-      name_lt               = "lt-asg"
-      desired_size          = 1
-      max_size              = 2
-      min_size              = 1
-      instance_types_launch = "t3.medium"
-      volume-size           = 20
-      volume-type           = "gp3"
-      taints_lt             = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
-      labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
-      name_asg              = "infra"
-      vpc_zone_identifier   = "${module.vpc.private_ids}"
-      asg_tags = [
-        {
-          key                 = "Environment"
-          value               = "${local.environment}"
-          propagate_at_launch = true
-        },
-        {
-          key                 = "Name"
-          value               = "${local.environment}"
-          propagate_at_launch = true
-        },
-        {
-          key                 = "kubernetes.io/cluster/${local.cluster_name}"
-          value               = "owner"
-          propagate_at_launch = true
-        },
-      ]
-    }
-  }
-
   nodes_spot = {
     spotinst = {
-      create_node_spotinst         = false
+      create_node_spotinst         = true
       node_name                    = "spotinst"
       cluster_version              = "1.24"
       desired_size                 = 1

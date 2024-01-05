@@ -90,6 +90,11 @@ module "velero" {
   }
 
   set = try(var.custom_values_velero["set"], {})
+
+  depends_on = [
+    module.nodes,
+    module.node-spot
+  ]
 }
 
 ## Ingress-nginx
@@ -114,7 +119,8 @@ module "ingress-helm" {
   set = try(var.custom_values_nginx["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }
@@ -140,7 +146,8 @@ module "cert-helm" {
   set = try(var.custom_values_cert_manager["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }
@@ -187,7 +194,8 @@ module "efs-helm" {
   set = try(var.custom_values_efs["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }
@@ -233,7 +241,8 @@ module "ebs-helm" {
   set = try(var.custom_values_ebs["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }
@@ -279,7 +288,8 @@ module "alb" {
   set = try(var.custom_values_alb["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 }
 
@@ -329,7 +339,8 @@ module "asg" {
   set = try(var.custom_values_asg["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }
@@ -359,7 +370,8 @@ module "external-dns" {
   set = try(var.custom_values_external-dns["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }
@@ -385,7 +397,8 @@ module "metrics-server" {
   set = try(var.custom_values_metrics-server["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }
@@ -413,7 +426,8 @@ module "custom" {
   set = try(each.value.set, {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 
 }

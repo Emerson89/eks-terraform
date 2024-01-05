@@ -21,13 +21,16 @@ locals {
       "cidr_blocks" = ["0.0.0.0/0"]
     }
   }
-  node_sg_name = "nodesecuritygroup"
+  node_sg_name = "nodesecuritygroup${aws_eks_cluster.eks_cluster.name}"
 
   network_interfaces = [
     {
       security_groups = [try(aws_security_group.this[0].id, [])]
     }
   ]
+
+  security-group-node = [try(aws_security_group.this[0].id, [])]
+
 }
 
 ### SEGURITY_GROUP
@@ -142,3 +145,36 @@ module "nodes" {
   tags = var.tags
 }
 
+module "node-spot" {
+  source = "./modules/nodes-spot"
+
+  for_each = var.nodes_spot
+
+  create_node_spotinst          = try(each.value.create_node_spotinst, false)
+  cluster_name                  = try(aws_eks_cluster.eks_cluster.name, null)
+  cluster_version               = try(each.value.cluster_version, null)
+  node-role                     = try(aws_iam_instance_profile.iam-node-instance-profile-eks.name, "")
+  private_subnet                = try(var.private_subnet, [])
+  node_name                     = try(each.value.node_name, null)
+  desired_size                  = try(each.value.desired_size, null)
+  max_size                      = try(each.value.max_size, null)
+  min_size                      = try(each.value.min_size, null)
+  environment                   = var.environment
+  preferred_availability_zones  = try(each.value.preferred_availability_zones, ["us-east-1c"])
+  instance_types_ondemand       = try(each.value.instance_types_ondemand, "t3.micro")
+  instance_types_spot           = try(each.value.instance_types_spot, ["m4.large", "m5.large", "m5a.large", "r4.large", "r5.large", "r5a.large"])
+  instance_types_preferred_spot = try(each.value.instance_types_preferred_spot, ["m5.large"])
+  autoscale_is_auto_config      = try(each.value.autoscale_is_auto_config, true)
+  autoscale_is_enabled          = try(each.value.autoscale_is_enabled, true)
+  spot_percentage               = try(each.value.spot_percentage, 50)
+  volume_type                   = try(each.value.volume_type, "gp3")
+  disk_size                     = try(each.value.volume_size, 20)
+  instance_types_weights        = try(each.value.instance_types_weights, [])
+  
+  security-group-node           = var.security_additional ? local.security-group-node : []
+  endpoint                      = try(aws_eks_cluster.eks_cluster.endpoint, "")
+  certificate_authority         = try(data.aws_eks_cluster.this.certificate_authority[0].data, "")
+
+  tags = var.tags
+
+}

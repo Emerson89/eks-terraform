@@ -1,5 +1,11 @@
 variable "nodes" {
-  description = "Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster"
+  description = "Nodes general"
+  type        = any
+  default     = {}
+}
+
+variable "nodes_spot" {
+  description = "Nodes spotinst"
   type        = any
   default     = {}
 }

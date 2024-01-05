@@ -53,6 +53,7 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
   data = local.aws_auth_configmap_data
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot
   ]
 }
