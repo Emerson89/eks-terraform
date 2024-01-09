@@ -71,7 +71,7 @@ module "iam-velero" {
 module "velero" {
   source = "./modules/helm"
 
-  count = var.velero ? 1 : 0
+  count = var.velero || var.cert-manager ? 1 : 0
 
   helm_release = {
 
@@ -90,6 +90,11 @@ module "velero" {
   }
 
   set = try(var.custom_values_velero["set"], {})
+
+  depends_on = [
+    module.nodes,
+    module.cert-helm
+  ]
 }
 
 ## Ingress-nginx
