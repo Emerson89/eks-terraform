@@ -56,7 +56,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.5"
 
   cluster_name              = local.cluster_name
   kubernetes_version        = "1.24"
@@ -64,7 +64,7 @@ module "eks" {
   environment               = local.environment
   endpoint_private_access   = true
   endpoint_public_access    = true
-
+  
   ## Additional security-group cluster
   security_additional = true
   vpc_id              = module.vpc.vpc_id
@@ -93,7 +93,7 @@ module "eks" {
   filesystem_id      = "fs-92107410"
 
   ## Controller EBS Helm
-  aws-ebs-csi-driver = false
+  aws-ebs-csi-driver = true
 
   ## Configuration custom values
   #custom_values_ebs = {
@@ -107,7 +107,7 @@ module "eks" {
   external-dns = false
 
   ## Controller ASG
-  aws-autoscaler-controller = false
+  aws-autoscaler-controller = true
 
   ## Controller ALB
   aws-load-balancer-controller = false
@@ -148,28 +148,28 @@ module "eks" {
 
   ## CUSTOM_HELM
 
-  custom_helm = {
-    aws-secrets-manager = {
-      name             = "aws-secrets-manager"
-      namespace        = "kube-system"
-      repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
-      chart            = "secrets-store-csi-driver-provider-aws"
-      version          = "0.3.4"
-      create_namespace = false
-      #values = file("${path.module}/values.yaml")
-      values = []
-    }
-    secret-csi = {
-      name             = "secret-csi"
-      namespace        = "kube-system"
-      repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
-      chart            = "secrets-store-csi-driver"
-      version          = "v1.3.4"
-      create_namespace = false
-      #values = file("${path.module}/values.yaml")
-      values = []
-    }
-  }
+  # custom_helm = {
+  #   aws-secrets-manager = {
+  #     name             = "aws-secrets-manager"
+  #     namespace        = "kube-system"
+  #     repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+  #     chart            = "secrets-store-csi-driver-provider-aws"
+  #     version          = "0.3.4"
+  #     create_namespace = false
+  #     #values = file("${path.module}/values.yaml")
+  #     values = []
+  #   }
+  #   secret-csi = {
+  #     name             = "secret-csi"
+  #     namespace        = "kube-system"
+  #     repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
+  #     chart            = "secrets-store-csi-driver"
+  #     version          = "v1.3.4"
+  #     create_namespace = false
+  #     #values = file("${path.module}/values.yaml")
+  #     values = []
+  #   }
+  # }
 
   ## GROUPS NODES
   nodes = {
@@ -178,9 +178,9 @@ module "eks" {
       node_name               = "infra"
       cluster_version_manager = "1.24"
       desired_size            = 1
-      max_size                = 3
+      max_size                = 6
       min_size                = 1
-      instance_types          = ["t3.medium"]
+      instance_types          = ["t3.medium","t3a.medium"]
       disk_size               = 20
       capacity_type           = "SPOT"
     }
