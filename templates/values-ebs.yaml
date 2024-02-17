@@ -25,16 +25,16 @@ controller:
       eks.amazonaws.com/role-arn: ${aws_arn_ebs}
     automountServiceAccountToken: true
 
-storageClasses:
+storageClasses: []
 # Add StorageClass resources like:
-- name: gp3
-  provisioner: kubernetes.io/aws-ebs
-  volumeBindingMode: WaitForFirstConsumer
-  annotations:
-     storageclass.kubernetes.io/is-default-class: "true"
-  parameters:
-    type: gp3
-    fsType: ext4
+# - name: gp3
+#   provisioner: kubernetes.io/aws-ebs
+#   volumeBindingMode: WaitForFirstConsumer
+#   annotations:
+#      storageclass.kubernetes.io/is-default-class: "true"
+#   parameters:
+#     type: gp3
+#     fsType: ext4
 ## annotation metadata
 #   annotations:
 #     storageclass.kubernetes.io/is-default-class: "true"

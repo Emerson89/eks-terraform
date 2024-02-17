@@ -8,6 +8,7 @@ locals {
   name_ingress_nginx  = "ingress-nginx"
   name_cert_manager   = "cert-manager"
   name_velero         = "velero"
+  name_karpenter      = "karpenter"
 
 }
 
@@ -30,6 +31,59 @@ provider "helm" {
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
+
+## karpenter
+
+module "iam-karpenter" {
+  source = "./modules/iam"
+
+  count = var.karpenter ? 1 : 0
+
+  iam_roles = {
+    "karpenter-${var.environment}" = {
+      "openid_connect" = "${aws_iam_openid_connect_provider.this.arn}"
+      "openid_url"     = "${aws_iam_openid_connect_provider.this.url}"
+      "serviceaccount" = "karpenter"
+      "string"         = "StringEquals"
+      "namespace"      = "karpenter"
+      "policy" = templatefile("${path.module}/templates/policy-karpenter.json", {
+        KARPENTER_NODE_ROLE = "${aws_iam_role.node.arn}"
+        AWS_REGION          = "${data.aws_region.current.name}"
+        AWS_ACCOUNT_ID      = "${data.aws_caller_identity.current.id}"
+        CLUSTER_NAME        = "${aws_eks_cluster.eks_cluster.name}"
+      })
+    }
+  }
+}
+
+module "karpenter" {
+  source = "./modules/helm"
+
+  count = var.karpenter ? 1 : 0
+
+  helm_release = {
+
+    name             = try(var.custom_values_karpenter["name"], local.name_karpenter)
+    namespace        = try(var.custom_values_karpenter["namespace"], "karpenter")
+    repository       = "oci://public.ecr.aws/karpenter"
+    chart            = "karpenter"
+    version          = var.version_karpenter
+    create_namespace = true
+
+    values = try(var.custom_values_karpenter["values"], [templatefile("${path.module}/templates/values-karpenter.yaml", {
+      CLUSTER_NAME      = "${aws_eks_cluster.eks_cluster.name}"
+      aws_arn_karpenter = module.iam-karpenter[0].arn[0]
+    })])
+
+  }
+  
+  set = try(var.custom_values_karpenter["set"], {})
+
+  depends_on = [
+    module.nodes
+  ]
+}
+
 
 ## Velero
 
@@ -71,7 +125,7 @@ module "iam-velero" {
 module "velero" {
   source = "./modules/helm"
 
-  count = var.velero || var.cert-manager ? 1 : 0
+  count = var.velero ? 1 : 0
 
   helm_release = {
 
@@ -92,8 +146,7 @@ module "velero" {
   set = try(var.custom_values_velero["set"], {})
 
   depends_on = [
-    module.nodes,
-    module.cert-helm
+    module.nodes
   ]
 }
 

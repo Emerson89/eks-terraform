@@ -70,6 +70,24 @@ variable "custom_values_velero" {
   default     = {}
 }
 
+variable "karpenter" {
+  description = "Install release helm karpenter "
+  type        = bool
+  default     = false
+}
+
+variable "version_karpenter" {
+  description = "Install release helm karpenter "
+  type        = string
+  default     = "v0.34.0"
+}
+
+variable "custom_values_karpenter" {
+  description = "Custom karpenter a Release is an instance of a chart running in a Kubernetes cluster"
+  type        = any
+  default     = {}
+}
+
 variable "force_destroy" {
   description = "Boolean that indicates all objects (including any locked objects) should be deleted from the bucket when the bucket is destroyed so that the bucket can be destroyed without error"
   type        = bool
@@ -261,6 +279,12 @@ variable "security_additional" {
   description = "Additional security grupo cluster"
   type        = bool
   default     = false
+}
+
+variable "additional_rules_security_group" {
+  description = "Rules extras security group"
+  type        = any
+  default     = {}
 }
 
 variable "fargate_auth" {

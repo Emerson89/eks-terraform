@@ -3,7 +3,7 @@ resource "aws_iam_instance_profile" "iam-node-instance-profile-eks" {
 }
 
 resource "aws_iam_role" "node" {
-  name = format("%s-%s-node-role", var.cluster_name, var.environment)
+  name_prefix = "node_${var.cluster_name}_"
 
   assume_role_policy = jsonencode({
     Statement = [{
@@ -27,7 +27,7 @@ resource "aws_iam_role" "node" {
 
 
 resource "aws_iam_role" "master" {
-  name = format("%s-%s-role", var.cluster_name, var.environment)
+  name_prefix = "master_${var.cluster_name}_"
 
   assume_role_policy = jsonencode({
     Statement = [{
@@ -131,6 +131,11 @@ resource "aws_iam_role_policy_attachment" "AmazonEKSServicePolicy" {
   role       = aws_iam_role.master.name
 }
 
+resource "aws_iam_role_policy_attachment" "AmazonEKSVPCResourceController" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+  role       = aws_iam_role.master.name
+}
+
 resource "aws_iam_role_policy_attachment" "AmazonEKSWorkerNodePolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
   role       = aws_iam_role.node.name
@@ -151,7 +156,7 @@ resource "aws_iam_role_policy_attachment" "ElasticLoadBalancingReadOnly" {
   role       = aws_iam_role.node.name
 }
 
-resource "aws_iam_role_policy_attachment" "AmazonEKSVPCResourceController" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-  role       = aws_iam_role.master.name
+resource "aws_iam_role_policy_attachment" "AmazonSSMManagedInstanceCore" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  role       = aws_iam_role.node.name
 }

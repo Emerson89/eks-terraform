@@ -9,16 +9,28 @@ locals {
   tags = {
     Environment = "hmg"
   }
+
+  tags_eks = {
+    Environment = "hmg"
+    ## Required karpenter
+    "karpenter.sh/discovery" = local.cluster_name
+  }
+
   cluster_name = "k8s"
 
   public_subnets_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared",
-    "kubernetes.io/role/elb"                      = 1
+    "kubernetes.io/role/elb"                      = 1,
+    ## Required karpenter
+    "karpenter.sh/discovery" = local.cluster_name
   }
 
   private_subnets_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared",
-    "kubernetes.io/role/internal-elb"             = 1
+    "kubernetes.io/role/internal-elb"             = 1,
+    ## Required karpenter
+    "karpenter.sh/discovery" = local.cluster_name
+
   }
 }
 
@@ -51,7 +63,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.5"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.24"
@@ -60,19 +72,41 @@ module "eks" {
   endpoint_private_access = true
   endpoint_public_access  = true
 
-  ## Additional security-group cluster
+  ## Additional security-group cluster **Required karpenter**
   security_additional = false
   vpc_id              = module.vpc.vpc_id
+  # additional_rules_security_group = {
+  #   # Karpenter
+  #   ingress_cluster_8443_webhook = {
+  #     description                   = "Cluster API to node 8443/tcp webhook"
+  #     protocol                      = "tcp"
+  #     from_port                     = 8443
+  #     to_port                       = 8443
+  #     type                          = "ingress"
+  #     source_cluster_security_group = true
+  #   }
+  #   # ALB controller, NGINX
+  #   ingress_cluster_9443_webhook = {
+  #     description                   = "Cluster API to node 9443/tcp webhook"
+  #     protocol                      = "tcp"
+  #     from_port                     = 9443
+  #     to_port                       = 9443
+  #     type                          = "ingress"
+  #     source_cluster_security_group = true
+  #   }
+  # }
 
   private_subnet = module.vpc.private_ids
 
-  tags = local.tags
+  tags = local.tags_eks
 
   ## Addons EKS
   create_ebs     = false
   create_core    = false
   create_vpc_cni = false
   create_proxy   = false
+  
+  ## Configuration custom values recommendation to use "set"
 
   ## Velero
   velero = false
@@ -90,19 +124,29 @@ module "eks" {
   ## Controller EBS Helm
   aws-ebs-csi-driver = false
 
-  ## Configuration custom values
-  #custom_values_ebs = {
-  #  values = [templatefile("${path.module}/values-ebs.yaml", {
-  #    aws_region   = "us-east-1"
-  #    cluster_name = "${local.cluster_name}"
-  #  })]
-  #}
+  ## Configuration custom values recommendation to use "set"
+  # custom_values_ebs = {
+  #   set = [
+  #     {
+  #       name  = "resources.requests.cpu"
+  #       value = "10m"
+  #     },
+  #     {
+  #       name  = "resources.requests.memory"
+  #       value = "40Mi"
+  #     }
+  #   ]
+  # }
 
   ## External DNS 
   external-dns = false
 
   ## Controller ASG
   aws-autoscaler-controller = false
+
+  ## karpenter ASG test v1.24 k8s
+  karpenter         = false
+  version_karpenter = "v0.34.0"
 
   ## Controller ALB
   aws-load-balancer-controller = false
@@ -111,10 +155,6 @@ module "eks" {
   custom_values_alb = {
     set = [
       {
-        name  = "nodeSelector.Environment"
-        value = "hmg"
-      },
-      {
         name  = "vpcId" ## Variable obrigatory for controller alb
         value = module.vpc.vpc_id
       },
@@ -122,22 +162,26 @@ module "eks" {
         name  = "tag"
         value = "v2.5.4"
       },
-      {
-        name  = "tolerations[0].key"
-        value = "environment"
-      },
-      {
-        name  = "tolerations[0].operator"
-        value = "Equal"
-      },
-      {
-        name  = "tolerations[0].value"
-        value = "hmg"
-      },
-      {
-        name  = "tolerations[0].effect"
-        value = "NoSchedule"
-      }
+      # {
+      #   name  = "nodeSelector.Environment"
+      #   value = "hmg"
+      # },
+      # {
+      #   name  = "tolerations[0].key"
+      #   value = "environment"
+      # },
+      # {
+      #   name  = "tolerations[0].operator"
+      #   value = "Equal"
+      # },
+      # {
+      #   name  = "tolerations[0].value"
+      #   value = "hmg"
+      # },
+      # {
+      #   name  = "tolerations[0].effect"
+      #   value = "NoSchedule"
+      # }
     ]
   }
 
