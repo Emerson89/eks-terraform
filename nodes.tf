@@ -64,7 +64,7 @@ locals {
     }
   ]
 
-  security-group-node = [try(aws_security_group.this[0].id, [])]
+  #security-group-node = [try(aws_security_group.this[0].id, [])]
 
 }
 
@@ -206,7 +206,7 @@ module "node-spot" {
   disk_size                     = try(each.value.volume_size, 20)
   instance_types_weights        = try(each.value.instance_types_weights, [])
   
-  security-group-node           = var.security_additional ? local.security-group-node : []
+  security-group-node           = var.security_additional ? aws_security_group.this[0].id : []
   endpoint                      = try(aws_eks_cluster.eks_cluster.endpoint, "")
   certificate_authority         = try(data.aws_eks_cluster.this.certificate_authority[0].data, "")
 
