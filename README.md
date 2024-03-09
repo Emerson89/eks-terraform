@@ -26,8 +26,9 @@ Some of the addon/controller policies that are currently supported include:
 - [Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/README.md)
 - [Metrics-Server](https://github.com/helm/charts/tree/master/stable/metrics-server)
 - [Ingress-nginx](https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx)
-- [cert-manager](https://github.com/cert-manager/cert-manager/tree/master/deploy/charts/cert-manager)
-- [velero](https://github.com/vmware-tanzu/helm-charts/tree/main/charts/velero)
+- [Cert-manager](https://github.com/cert-manager/cert-manager/tree/master/deploy/charts/cert-manager)
+- [Velero](https://github.com/vmware-tanzu/helm-charts/tree/main/charts/velero)
+- [Karpenter](https://github.com/aws/karpenter-provider-aws/tree/main/charts/karpenter)
 
 ### Addons EKS 
 
@@ -49,65 +50,35 @@ module "eks" {
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
-  
-  ## Manager users, roles, accounts
-  mapRoles = [
-    {
-      rolearn  = "arn:aws:iam::xxxxxxxxx:role/test"
-      username = "test"
-      groups   = ["system:masters"]
-    }
-  ]
-  mapUsers = [
-    {
-      userarn  = "arn:aws:iam::xxxxxxxxxx:user/test"
-      username = "test"
-      groups   = ["admin"]
-    }
-  ]
-  mapAccounts = [
-    "777777777777",
-  ]
-  
-  ## Manager RBAC
-  rbac = {
-    admin = {
-      metadata = [{
-        name = "adm"
-      }]
-      rules = [{
-        api_groups = ["*"]
-        verbs      = ["*"]
-        resources  = ["*"]
-      }]
-      subjects = [{
-        kind = "Group"
-        name = "adm"
-      }]
-    }
-    read-only = {
-      metadata = [{
-        name = "read-only"
-      }]
-      rules = [{
-        api_groups = ["*"]
-        resources  = ["*"]
-        verbs      = ["get", "list", "watch"]
-      }]
-      subjects = [{
-        kind = "Group"
-        name = "read-only"
-      }]
-    }
-  }
 
-  ## Additional security-group cluster
+  ## Additional security-group cluster **Required karpenter**
   security_additional = false
   vpc_id              = module.vpc.vpc_id
+  ## additional rules segurity group 
+  ### additional_rules_security_group = {
+  #   # Karpenter
+  #   ingress_cluster_8443_webhook = {
+  #     description                   = "Cluster API to node 8443/tcp webhook"
+  #     protocol                      = "tcp"
+  #     from_port                     = 8443
+  #     to_port                       = 8443
+  #     type                          = "ingress"
+  #     source_cluster_security_group = true
+  #   }
+  #   # ALB controller, NGINX
+  #   ingress_cluster_9443_webhook = {
+  #     description                   = "Cluster API to node 9443/tcp webhook"
+  #     protocol                      = "tcp"
+  #     from_port                     = 9443
+  #     to_port                       = 9443
+  #     type                          = "ingress"
+  #     source_cluster_security_group = true
+  #   }
+  # }
 
   private_subnet = module.vpc.private_ids
 
-  tags = local.tags
+  tags = local.tags_eks
 
   ## Addons EKS
   create_ebs     = false
@@ -115,35 +86,47 @@ module "eks" {
   create_vpc_cni = false
   create_proxy   = false
   
+  ## Configuration custom values recommendation to use "set"
+
+  ## Velero
+  velero = false
+
+  ## Controller ingress-nginx
+  ingress-nginx = false
+
+  ## Cert-manager
+  cert-manager = false
+
   ## EFS controller
   aws-efs-csi-driver = false
   filesystem_id      = "fs-92107410"
 
   ## Controller EBS Helm
   aws-ebs-csi-driver = false
-  
-  ## Configuration custom values
-  #custom_values_ebs = {
-  #  values = [templatefile("${path.module}/values-ebs.yaml", {
-  #    aws_region   = "us-east-1"
-  #    cluster_name = "${local.cluster_name}"
-  #  })]
-  #}
-  
-  ## Velero
-  velero = false
 
-  ## Controller ingress-nginx
-  ingress-nginx = false
-  
-  ## Cert-manager
-  cert-manager = false
+  ## Configuration custom values recommendation to use "set"
+  # custom_values_ebs = {
+  #   set = [
+  #     {
+  #       name  = "resources.requests.cpu"
+  #       value = "10m"
+  #     },
+  #     {
+  #       name  = "resources.requests.memory"
+  #       value = "40Mi"
+  #     }
+  #   ]
+  # }
 
   ## External DNS 
   external-dns = false
 
   ## Controller ASG
   aws-autoscaler-controller = false
+
+  ## karpenter ASG test v1.24 k8s
+  karpenter         = false
+  version_karpenter = "v0.34.0"
 
   ## Controller ALB
   aws-load-balancer-controller = false
@@ -152,10 +135,6 @@ module "eks" {
   custom_values_alb = {
     set = [
       {
-        name  = "nodeSelector.Environment"
-        value = "hmg"
-      },
-      {
         name  = "vpcId" ## Variable obrigatory for controller alb
         value = module.vpc.vpc_id
       },
@@ -163,22 +142,26 @@ module "eks" {
         name  = "tag"
         value = "v2.5.4"
       },
-      {
-        name  = "tolerations[0].key"
-        value = "environment"
-      },
-      {
-        name  = "tolerations[0].operator"
-        value = "Equal"
-      },
-      {
-        name  = "tolerations[0].value"
-        value = "hmg"
-      },
-      {
-        name  = "tolerations[0].effect"
-        value = "NoSchedule"
-      }
+      # {
+      #   name  = "nodeSelector.Environment"
+      #   value = "hmg"
+      # },
+      # {
+      #   name  = "tolerations[0].key"
+      #   value = "environment"
+      # },
+      # {
+      #   name  = "tolerations[0].operator"
+      #   value = "Equal"
+      # },
+      # {
+      #   name  = "tolerations[0].value"
+      #   value = "hmg"
+      # },
+      # {
+      #   name  = "tolerations[0].effect"
+      #   value = "NoSchedule"
+      # }
     ]
   }
 
@@ -193,7 +176,7 @@ module "eks" {
       version          = "0.3.4"
       create_namespace = false
       #values = file("${path.module}/values.yaml")
-      values           = []
+      values = []
     }
     secret-csi = {
       name             = "secret-csi"
@@ -203,14 +186,14 @@ module "eks" {
       version          = "v1.3.4"
       create_namespace = false
       #values = file("${path.module}/values.yaml")
-      values           = []
+      values = []
     }
   }
 
-  ## NODES
+  ## GROUPS NODES
   nodes = {
     infra = {
-      create_node             = true
+      create_node             = false
       node_name               = "infra"
       cluster_version_manager = "1.24"
       desired_size            = 1
@@ -218,10 +201,12 @@ module "eks" {
       min_size                = 1
       instance_types          = ["t3.medium"]
       disk_size               = 20
+      capacity_type           = "SPOT"
     }
+
     infra-lt = {
-      create_node           = true
-      launch_create         = true
+      create_node           = false
+      launch_create         = false
       name_lt               = "lt"
       node_name             = "infra-lt"
       cluster_version       = "1.24"
@@ -246,8 +231,9 @@ module "eks" {
     }
 
     infra-fargate = {
-      create_fargate       = true
-      fargate_auth         = true
+      create_node          = false
+      create_fargate       = false
+      fargate_auth         = false
       fargate_profile_name = "infra-fargate"
       selectors = [
         {
@@ -262,8 +248,9 @@ module "eks" {
       ]
     }
     infra-asg = {
-      launch_create         = true
-      asg_create            = true
+      create_node           = false
+      launch_create         = false
+      asg_create            = false
       cluster_version       = "1.24"
       name_lt               = "lt-asg"
       desired_size          = 1
@@ -448,6 +435,82 @@ module "eks" {
 }
 ```
 
+***Karpenter ASG***
+
+```hcl
+module "eks" {
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+
+  ...
+  ## Additional security-group cluster **Required karpenter**
+  security_additional = true
+  vpc_id              = module.vpc.vpc_id
+  
+  ## Add tags to subnets and security groups
+  ## use the eks "tags" variable to add to the security group 
+  
+  tags_eks = {
+    ## Required karpenter
+    "karpenter.sh/discovery" = "<cluster_name>"
+  }
+
+  ## karpenter ASG test v1.24 k8s
+  karpenter         = true
+  version_karpenter = "v0.34.0"
+  ...
+
+}
+``` 
+
+- **Example of use**
+
+```yaml
+cat <<EOF | envsubst | kubectl apply -f -
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: default
+spec:
+  template:
+    spec:
+      requirements:
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values:
+            - t3.micro
+            - t3.small
+            - t3.medium
+      nodeClassRef:
+        name: default
+  limits:
+    cpu: 1000
+  disruption:
+    consolidationPolicy: WhenUnderutilized
+    expireAfter: 720h # 30 * 24h = 720h
+---
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: default
+spec:
+  # Required, resolves a default ami and userdata
+  amiFamily: AL2 # Amazon Linux 2
+  role: "<ROLE-NODE-NAME>" # replace with your cluster name
+  # Required, discovers subnets to attach to instances
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "<CLUSTER_NAME>" # replace with your cluster name
+  # Required, discovers security groups to attach to instances
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "<CLUSTER_NAME>" # replace with your cluster name
+EOF
+
+## https://karpenter.sh/v0.32/concepts/
+
+## https://github.com/aws/karpenter-provider-aws/tree/main/examples/workloads
+```
+
 ***Fargate profile***
 
 ```hcl
@@ -537,8 +600,10 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="module_iam-asg"></a> [iam-asg](#module\_iam-asg) | ./modules/iam | n/a |
 | <a name="module_iam-ebs"></a> [iam-ebs](#module\_iam-ebs) | ./modules/iam | n/a |
 | <a name="module_iam-efs"></a> [iam-efs](#module\_iam-efs) | ./modules/iam | n/a |
+| <a name="module_iam-karpenter"></a> [iam-karpenter](#module\_iam-karpenter) | ./modules/iam | n/a |
 | <a name="module_iam-velero"></a> [iam-velero](#module\_iam-velero) | ./modules/iam | n/a |
 | <a name="module_ingress-helm"></a> [ingress-helm](#module\_ingress-helm) | ./modules/helm | n/a |
+| <a name="module_karpenter"></a> [karpenter](#module\_karpenter) | ./modules/helm | n/a |
 | <a name="module_metrics-server"></a> [metrics-server](#module\_metrics-server) | ./modules/helm | n/a |
 | <a name="module_node-spot"></a> [node-spot](#module\_node-spot) | ./modules/nodes-spot | n/a |
 | <a name="module_nodes"></a> [nodes](#module\_nodes) | ./modules/nodes | n/a |
@@ -589,6 +654,7 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_additional_rules_security_group"></a> [additional\_rules\_security\_group](#input\_additional\_rules\_security\_group) | Rules extras security group | `any` | `{}` | no |
 | <a name="input_aws-autoscaler-controller"></a> [aws-autoscaler-controller](#input\_aws-autoscaler-controller) | Install release helm controller asg | `bool` | `false` | no |
 | <a name="input_aws-ebs-csi-driver"></a> [aws-ebs-csi-driver](#input\_aws-ebs-csi-driver) | Install release helm controller ebs | `bool` | `false` | no |
 | <a name="input_aws-efs-csi-driver"></a> [aws-efs-csi-driver](#input\_aws-efs-csi-driver) | Install release helm controller efs | `bool` | `false` | no |
@@ -607,6 +673,7 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_custom_values_ebs"></a> [custom\_values\_ebs](#input\_custom\_values\_ebs) | Custom controller ebs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_efs"></a> [custom\_values\_efs](#input\_custom\_values\_efs) | Custom controler efs a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_external-dns"></a> [custom\_values\_external-dns](#input\_custom\_values\_external-dns) | Custom external-dns a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
+| <a name="input_custom_values_karpenter"></a> [custom\_values\_karpenter](#input\_custom\_values\_karpenter) | Custom karpenter a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_metrics-server"></a> [custom\_values\_metrics-server](#input\_custom\_values\_metrics-server) | Custom metrics-server a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_nginx"></a> [custom\_values\_nginx](#input\_custom\_values\_nginx) | Custom controler ingress-nginx a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_velero"></a> [custom\_values\_velero](#input\_custom\_values\_velero) | Custom velero a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
@@ -620,6 +687,7 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_filesystem_id"></a> [filesystem\_id](#input\_filesystem\_id) | Filesystem used helm efs | `string` | `"fs-92107410"` | no |
 | <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Boolean that indicates all objects (including any locked objects) should be deleted from the bucket when the bucket is destroyed so that the bucket can be destroyed without error | `bool` | `false` | no |
 | <a name="input_ingress-nginx"></a> [ingress-nginx](#input\_ingress-nginx) | Install release helm controller ingress-nginx | `bool` | `false` | no |
+| <a name="input_karpenter"></a> [karpenter](#input\_karpenter) | Install release helm karpenter | `bool` | `false` | no |
 | <a name="input_kubernetes_version"></a> [kubernetes\_version](#input\_kubernetes\_version) | Version kubernetes | `string` | `"1.23"` | no |
 | <a name="input_manage_aws_auth_configmap"></a> [manage\_aws\_auth\_configmap](#input\_manage\_aws\_auth\_configmap) | Manager configmap aws-auth | `bool` | `true` | no |
 | <a name="input_mapAccounts"></a> [mapAccounts](#input\_mapAccounts) | List of accounts maps to add to the aws-auth configmap | `list(any)` | `[]` | no |
@@ -635,6 +703,7 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | Subnet private | `list(any)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(string)` | `{}` | no |
 | <a name="input_velero"></a> [velero](#input\_velero) | Install release helm velero | `bool` | `false` | no |
+| <a name="input_version_karpenter"></a> [version\_karpenter](#input\_version\_karpenter) | Install release helm karpenter | `string` | `"v0.34.0"` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id | `string` | `""` | no |
 
 ## Outputs

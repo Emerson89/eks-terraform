@@ -3,16 +3,51 @@ data "aws_ssm_parameter" "eks_ami_release_version" {
 }
 
 locals {
-  ingress_with_source_security_group = {
-    ingress_nodes_ephemeral = {
-      description = "Node to node ingress on ephemeral ports"
-      protocol    = -1
-      from_port   = 0
-      to_port     = 65535
-      type        = "ingress"
-      self        = true
-    }
-  }
+  ingress_with_source_security_group = merge(
+    {
+      ingress_nodes_ephemeral = {
+        description = "Node to node ingress on ephemeral ports"
+        protocol    = "tcp"
+        from_port   = 1025
+        to_port     = 65535
+        type        = "ingress"
+        self        = true
+      },
+      ingress_cluster_443 = {
+        description                   = "Cluster API to node groups"
+        protocol                      = "tcp"
+        from_port                     = 443
+        to_port                       = 443
+        type                          = "ingress"
+        source_cluster_security_group = true
+      }
+      ingress_cluster_kubelet = {
+        description                   = "Cluster API to node kubelets"
+        protocol                      = "tcp"
+        from_port                     = 10250
+        to_port                       = 10250
+        type                          = "ingress"
+        source_cluster_security_group = true
+      }
+      ingress_coredns_tcp = {
+        description = "Node to node CoreDNS"
+        protocol    = "tcp"
+        from_port   = 53
+        to_port     = 53
+        type        = "ingress"
+        self        = true
+      }
+      ingress_coredns_udp = {
+        description = "Node to node CoreDNS UDP"
+        protocol    = "udp"
+        from_port   = 53
+        to_port     = 53
+        type        = "ingress"
+        self        = true
+      }
+    },
+    var.additional_rules_security_group,
+  )
   egress = {
     "engress_rule" = {
       "from_port"   = "0"
