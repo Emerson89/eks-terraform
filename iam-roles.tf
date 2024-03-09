@@ -156,11 +156,6 @@ resource "aws_iam_role_policy_attachment" "ElasticLoadBalancingReadOnly" {
   role       = aws_iam_role.node.name
 }
 
-resource "aws_iam_role_policy_attachment" "AmazonEKSVPCResourceController" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-  role       = aws_iam_role.master.name
-}
-
 resource "aws_iam_role_policy_attachment" "AmazonEC2RoleforSSM" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
   role       = aws_iam_role.node.name
