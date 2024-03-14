@@ -37,25 +37,33 @@ Some of the addon/controller policies that are currently supported include:
 - [core](#core)
 - [ebs](#ebs)
 
+### Inputs
+
+- [Node](https://github.com/Emerson89/eks-terraform/blob/main/modules/nodes/README.md)
+- [Node-Spotinst](https://github.com/Emerson89/eks-terraform/blob/main/modules/nodes-spot/README.md) 
+
 #
 ## Usage
 #
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.24"
+  kubernetes_version      = "1.28"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
 
-  ## Additional security-group cluster **Required karpenter**
-  security_additional = false
+  ## create_aws_auth_configmap **Required Self manager nodes and Spotinst**
+  create_aws_auth_configmap = false
+  manage_aws_auth_configmap = true
+
+  ## Additional security-group cluster **Required karpenter and Spotinst**
+  security_additional = true
   vpc_id              = module.vpc.vpc_id
-  ## additional rules segurity group 
-  ### additional_rules_security_group = {
+  # additional_rules_security_group = {
   #   # Karpenter
   #   ingress_cluster_8443_webhook = {
   #     description                   = "Cluster API to node 8443/tcp webhook"
@@ -85,7 +93,7 @@ module "eks" {
   create_core    = false
   create_vpc_cni = false
   create_proxy   = false
-  
+
   ## Configuration custom values recommendation to use "set"
 
   ## Velero
@@ -167,41 +175,42 @@ module "eks" {
 
   ## CUSTOM_HELM
 
-  custom_helm = {
-    aws-secrets-manager = {
-      name             = "aws-secrets-manager"
-      namespace        = "kube-system"
-      repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
-      chart            = "secrets-store-csi-driver-provider-aws"
-      version          = "0.3.4"
-      create_namespace = false
-      #values = file("${path.module}/values.yaml")
-      values = []
-    }
-    secret-csi = {
-      name             = "secret-csi"
-      namespace        = "kube-system"
-      repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
-      chart            = "secrets-store-csi-driver"
-      version          = "v1.3.4"
-      create_namespace = false
-      #values = file("${path.module}/values.yaml")
-      values = []
-    }
-  }
+  # custom_helm = {
+  #   aws-secrets-manager = {
+  #     name             = "aws-secrets-manager"
+  #     namespace        = "kube-system"
+  #     repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+  #     chart            = "secrets-store-csi-driver-provider-aws"
+  #     version          = "0.3.4"
+  #     create_namespace = false
+  #     #values = file("${path.module}/values.yaml")
+  #     values = []
+  #   }
+  #   secret-csi = {
+  #     name             = "secret-csi"
+  #     namespace        = "kube-system"
+  #     repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
+  #     chart            = "secrets-store-csi-driver"
+  #     version          = "v1.3.4"
+  #     create_namespace = false
+  #     #values = file("${path.module}/values.yaml")
+  #     values = []
+  #   }
+  # }
 
   ## GROUPS NODES
   nodes = {
     infra = {
       create_node             = false
       node_name               = "infra"
-      cluster_version_manager = "1.24"
+      cluster_version_manager = "1.28"
       desired_size            = 1
-      max_size                = 3
+      max_size                = 5
       min_size                = 1
-      instance_types          = ["t3.medium"]
+      instance_types          = ["t3.medium", "t3a.medium"]
       disk_size               = 20
       capacity_type           = "SPOT"
+      release_version         = "1.28.5-20240227" ## If empty, update ami if available
     }
 
     infra-lt = {
@@ -209,13 +218,14 @@ module "eks" {
       launch_create         = false
       name_lt               = "lt"
       node_name             = "infra-lt"
-      cluster_version       = "1.24"
+      cluster_version       = "1.28"
       desired_size          = 1
       max_size              = 3
       min_size              = 1
       instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
+      image_id              = "ami-0df33cb954c3f5200" ## If empty, update ami if available
 
       labels = {
         Environment = "${local.environment}"
@@ -251,7 +261,7 @@ module "eks" {
       create_node           = false
       launch_create         = false
       asg_create            = false
-      cluster_version       = "1.24"
+      cluster_version       = "1.28"
       name_lt               = "lt-asg"
       desired_size          = 1
       max_size              = 2
@@ -283,9 +293,39 @@ module "eks" {
     }
   }
 
+  nodes_spot = {
+
+    spotinst = {
+      create_node_spotinst = false
+
+      node_name                    = "spotinst"
+      cluster_version              = "1.28"
+      desired_size                 = 1
+      max_size                     = 3
+      min_size                     = 1
+      preferred_availability_zones = ["us-east-1c"]
+      instance_types_spot          = ["t3.medium", "t3a.medium"]
+      spot_percentage              = 100
+      taints_lt                    = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+      labels_lt                    = "--node-labels=eks.amazonaws.com/nodegroup=spotinst"
+      image_id                     = "ami-0df33cb954c3f5200" ## If empty, update ami if available
+      ebs_block_device = [
+        {
+          volume_type = "gp3"
+          volume_size = 20
+        },
+      ]
+      spotinst_tags = [
+        {
+          key   = "Environment"
+          value = "${local.environment}"
+        }
+      ]
+    }
+  }
 }
 ```
-
+#
 ***Manager users, roles, accounts***
 
 ```hcl
@@ -384,10 +424,10 @@ rbac = {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
 
   cluster_name            = "k8s"
-  kubernetes_version      = "1.23"
+  kubernetes_version      = "1.28"
   subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
   environment             = "hmg"
   endpoint_private_access = true
@@ -397,11 +437,14 @@ module "eks" {
   create_aws_auth_configmap = true ## Necessary for self-management nodes
   manage_aws_auth_configmap = false
 
+  security_additional = true ## Necessary for self-management nodes
+  vpc_id              = module.vpc.vpc_id
+
   nodes = {
     infra-asg = {
       launch_create         = true
       asg_create            = true
-      cluster_version       = "1.23"
+      cluster_version       = "1.28"
       name_lt               = "lt-asg"
       desired_size          = 1
       max_size              = 2
@@ -439,7 +482,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
 
   ...
   ## Additional security-group cluster **Required karpenter**
@@ -539,35 +582,51 @@ nodes = {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
 
   cluster_name            = "k8s"
-  kubernetes_version      = "1.24"
+  kubernetes_version      = "1.28"
   subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
   environment             = "hmg"
   endpoint_private_access = true
   endpoint_public_access  = true
   
   ##Create aws-auth
-  create_aws_auth_configmap = true ## Necessary for self-management nodes
+  create_aws_auth_configmap = true ## Necessary for self-management nodes and spotinst
   manage_aws_auth_configmap = false
 
-  security_additional = true
+  security_additional = true ## Necessary for self-management nodes and spotinst
   vpc_id              = module.vpc.vpc_id
 
   ## GROUPS NODES
   nodes_spot = {
+
     spotinst = {
-      create_node_spotinst         = true
+      create_node_spotinst = true
+
       node_name                    = "spotinst"
       cluster_version              = "1.24"
       desired_size                 = 1
       max_size                     = 3
       min_size                     = 1
-      volume_type                  = "gp3"
-      volume_size                  = 20
       preferred_availability_zones = ["us-east-1c"]
-      instance_types_spot          = ["m4.large", "m5.large", "m5a.large", "r4.large", "r5.large", "r5a.large"]
+      instance_types_spot          = ["t3.medium", "t3a.medium"]
+      spot_percentage              = 100
+      taints_lt                    = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+      labels_lt                    = "--node-labels=eks.amazonaws.com/nodegroup=spotinst"
+      image_id                     = "ami-0df33cb954c3f5200" ## If empty, update ami if available
+      ebs_block_device = [
+        {
+          volume_type = "gp3"
+          volume_size = 20
+        },
+      ]
+      spotinst_tags = [
+        {
+          key   = "Environment"
+          value = "${local.environment}"
+        }
+      ]
     }
   }
 }  
@@ -641,13 +700,12 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | [aws_security_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group_rule.egress_rule](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.with_source_security_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
-| [kubernetes_config_map.aws_auth](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/config_map) | resource |
+| [kubernetes_config_map_v1.aws_auth](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/config_map_v1) | resource |
 | [kubernetes_config_map_v1_data.aws_auth](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/config_map_v1_data) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_eks_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster) | data source |
 | [aws_eks_cluster_auth.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster_auth) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
-| [aws_ssm_parameter.eks_ami_release_version](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 | [tls_certificate.this](https://registry.terraform.io/providers/hashicorp/tls/4.0.4/docs/data-sources/certificate) | data source |
 
 ## Inputs

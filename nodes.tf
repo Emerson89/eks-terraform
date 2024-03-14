@@ -1,7 +1,3 @@
-data "aws_ssm_parameter" "eks_ami_release_version" {
-  name = "/aws/service/eks/optimized-ami/${aws_eks_cluster.eks_cluster.version}/amazon-linux-2/recommended/release_version"
-}
-
 locals {
   ingress_with_source_security_group = merge(
     {
@@ -14,12 +10,12 @@ locals {
         self        = true
       },
       ingress_cluster_443 = {
-        description                   = "Cluster API to node groups"
-        protocol                      = "tcp"
-        from_port                     = 443
-        to_port                       = 443
-        type                          = "ingress"
-        source_cluster_security_group = true
+        description = "Cluster API to node groups"
+        protocol    = "tcp"
+        from_port   = 443
+        to_port     = 443
+        type        = "ingress"
+        self        = true
       }
       ingress_cluster_kubelet = {
         description                   = "Cluster API to node kubelets"
@@ -56,15 +52,13 @@ locals {
       "cidr_blocks" = ["0.0.0.0/0"]
     }
   }
-  node_sg_name = "nodesecuritygroup${aws_eks_cluster.eks_cluster.name}"
+  node_sg_name = "nodesecuritygroup"
 
   network_interfaces = [
     {
       security_groups = [try(aws_security_group.this[0].id, [])]
     }
   ]
-
-  #security-group-node = [try(aws_security_group.this[0].id, [])]
 
 }
 
@@ -133,7 +127,7 @@ module "nodes" {
   disk_size               = try(each.value.disk_size, null)
   capacity_type           = try(each.value.capacity_type, "ON_DEMAND")
   cluster_version_manager = try(each.value.cluster_version_manager, "")
-  release_version         = try(data.aws_ssm_parameter.eks_ami_release_version.value, "")
+  release_version         = try(each.value.release_version, "")
   create_node             = try(each.value.create_node, false)
 
   labels = try(each.value.labels, {})
@@ -142,6 +136,7 @@ module "nodes" {
   launch_create           = try(each.value.launch_create, false)
   launch_template_version = try(each.value.launch_template_version, null)
   name                    = try(each.value.name_lt, null)
+  image_id                = try(each.value.image_id, "")
   instance_types_launch   = try(each.value.instance_types_launch, "")
   volume-size             = try(each.value.volume-size, null)
   volume-type             = try(each.value.volume-type, null)
@@ -185,30 +180,46 @@ module "node-spot" {
 
   for_each = var.nodes_spot
 
-  create_node_spotinst          = try(each.value.create_node_spotinst, false)
-  cluster_name                  = try(aws_eks_cluster.eks_cluster.name, null)
-  cluster_version               = try(each.value.cluster_version, null)
-  node-role                     = try(aws_iam_instance_profile.iam-node-instance-profile-eks.name, "")
-  private_subnet                = try(var.private_subnet, [])
-  node_name                     = try(each.value.node_name, null)
-  desired_size                  = try(each.value.desired_size, null)
-  max_size                      = try(each.value.max_size, null)
-  min_size                      = try(each.value.min_size, null)
-  environment                   = var.environment
-  preferred_availability_zones  = try(each.value.preferred_availability_zones, ["us-east-1c"])
-  instance_types_ondemand       = try(each.value.instance_types_ondemand, "t3.micro")
-  instance_types_spot           = try(each.value.instance_types_spot, ["m4.large", "m5.large", "m5a.large", "r4.large", "r5.large", "r5a.large"])
-  instance_types_preferred_spot = try(each.value.instance_types_preferred_spot, ["m5.large"])
-  autoscale_is_auto_config      = try(each.value.autoscale_is_auto_config, true)
-  autoscale_is_enabled          = try(each.value.autoscale_is_enabled, true)
-  spot_percentage               = try(each.value.spot_percentage, 50)
-  volume_type                   = try(each.value.volume_type, "gp3")
-  disk_size                     = try(each.value.volume_size, 20)
-  instance_types_weights        = try(each.value.instance_types_weights, [])
-  
-  security-group-node           = [aws_security_group.this[0].id]
-  endpoint                      = try(aws_eks_cluster.eks_cluster.endpoint, "")
-  certificate_authority         = try(data.aws_eks_cluster.this.certificate_authority[0].data, "")
+  create_node_spotinst                               = try(each.value.create_node_spotinst, false)
+  cluster_name                                       = try(aws_eks_cluster.eks_cluster.name, null)
+  cluster_version                                    = try(each.value.cluster_version, null)
+  node-role                                          = aws_iam_instance_profile.iam-node-instance-profile-eks.name
+  image_id                                           = try(each.value.image_id, "")
+  private_subnet                                     = try(var.private_subnet, [])
+  node_name                                          = try(each.value.node_name, null)
+  desired_size                                       = try(each.value.desired_size, null)
+  max_size                                           = try(each.value.max_size, null)
+  min_size                                           = try(each.value.min_size, null)
+  cpu_credits                                        = try(each.value.cpu_credits, "standard")
+  orientation                                        = try(each.value.orientation, "balanced")
+  draining_timeout                                   = try(each.value.draining_timeout, 120)
+  utilize_reserved_instances                         = try(each.value.utilize_reserved_instances, false)
+  fallback_to_ondemand                               = try(each.value.fallback_to_ondemand, true)
+  capacity_unit                                      = try(each.value.capacity_unit, "instance")
+  product                                            = try(each.value.product, "Linux/UNIX")
+  enable_monitoring                                  = try(each.value.enable_monitoring, false)
+  ebs_optimized                                      = try(each.value.ebs_optimized, false)
+  health_check_type                                  = try(each.value.health_check_type, "K8S_NODE")
+  health_check_grace_period                          = try(each.value.health_check_grace_period, 300)
+  health_check_unhealthy_duration_before_replacement = try(each.value.health_check_unhealthy_duration_before_replacement, 120)
+  placement_tenancy                                  = try(each.value.placement_tenancy, "default")
+  environment                                        = var.environment
+  preferred_availability_zones                       = try(each.value.preferred_availability_zones, ["us-east-1c"])
+  instance_types_ondemand                            = try(each.value.instance_types_ondemand, "t3a.medium")
+  instance_types_spot                                = try(each.value.instance_types_spot, ["t3.large", "t3a.large", "m4.large", "m5.large", "m5a.large"])
+  instance_types_preferred_spot                      = try(each.value.instance_types_preferred_spot, ["t3.medium", "t3a.medium"])
+  autoscale_is_auto_config                           = try(each.value.autoscale_is_auto_config, true)
+  autoscale_is_enabled                               = try(each.value.autoscale_is_enabled, true)
+  spot_percentage                                    = try(each.value.spot_percentage, 50)
+  ebs_block_device                                   = try(each.value.ebs_block_device, [])
+  instance_types_weights                             = try(each.value.instance_types_weights, [])
+  taints_lt                                          = try(each.value.taints_lt, "")
+  labels_lt                                          = try(each.value.labels_lt, "")
+
+  security-group-node   = var.security_additional ? [aws_security_group.this[0].id] : []
+  endpoint              = try(aws_eks_cluster.eks_cluster.endpoint, "")
+  certificate_authority = try(data.aws_eks_cluster.this.certificate_authority[0].data, "")
+  spotinst_tags         = try(each.value.spotinst_tags, [])
 
   tags = var.tags
 

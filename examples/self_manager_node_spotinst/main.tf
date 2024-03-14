@@ -56,30 +56,54 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
 
-  cluster_name              = local.cluster_name
-  kubernetes_version        = "1.24"
-  subnet_ids                = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
-  environment               = local.environment
-  endpoint_private_access   = true
-  endpoint_public_access    = true
-  create_aws_auth_configmap = true
-  manage_aws_auth_configmap = false
+  cluster_name            = local.cluster_name
+  kubernetes_version      = "1.28"
+  subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
+  environment             = local.environment
+  endpoint_private_access = true
+  endpoint_public_access  = true
 
-  ## Additional security-group cluster
+  ## create_aws_auth_configmap **Required Self manager nodes and Spotinst**
+  create_aws_auth_configmap = false
+  manage_aws_auth_configmap = true
+
+  ## Additional security-group cluster **Required karpenter and Spotinst**
   security_additional = true
   vpc_id              = module.vpc.vpc_id
+  # additional_rules_security_group = {
+  #   # Karpenter
+  #   ingress_cluster_8443_webhook = {
+  #     description                   = "Cluster API to node 8443/tcp webhook"
+  #     protocol                      = "tcp"
+  #     from_port                     = 8443
+  #     to_port                       = 8443
+  #     type                          = "ingress"
+  #     source_cluster_security_group = true
+  #   }
+  #   # ALB controller, NGINX
+  #   ingress_cluster_9443_webhook = {
+  #     description                   = "Cluster API to node 9443/tcp webhook"
+  #     protocol                      = "tcp"
+  #     from_port                     = 9443
+  #     to_port                       = 9443
+  #     type                          = "ingress"
+  #     source_cluster_security_group = true
+  #   }
+  # }
 
   private_subnet = module.vpc.private_ids
 
-  tags = local.tags
+  tags = local.tags_eks
 
   ## Addons EKS
   create_ebs     = false
   create_core    = false
   create_vpc_cni = false
   create_proxy   = false
+
+  ## Configuration custom values recommendation to use "set"
 
   ## Velero
   velero = false
@@ -97,19 +121,29 @@ module "eks" {
   ## Controller EBS Helm
   aws-ebs-csi-driver = false
 
-  ## Configuration custom values
-  #custom_values_ebs = {
-  #  values = [templatefile("${path.module}/values-ebs.yaml", {
-  #    aws_region   = "us-east-1"
-  #    cluster_name = "${local.cluster_name}"
-  #  })]
-  #}
+  ## Configuration custom values recommendation to use "set"
+  # custom_values_ebs = {
+  #   set = [
+  #     {
+  #       name  = "resources.requests.cpu"
+  #       value = "10m"
+  #     },
+  #     {
+  #       name  = "resources.requests.memory"
+  #       value = "40Mi"
+  #     }
+  #   ]
+  # }
 
   ## External DNS 
   external-dns = false
 
   ## Controller ASG
   aws-autoscaler-controller = false
+
+  ## karpenter ASG test v1.24 k8s
+  karpenter         = false
+  version_karpenter = "v0.34.0"
 
   ## Controller ALB
   aws-load-balancer-controller = false
@@ -118,10 +152,6 @@ module "eks" {
   custom_values_alb = {
     set = [
       {
-        name  = "nodeSelector.Environment"
-        value = "hmg"
-      },
-      {
         name  = "vpcId" ## Variable obrigatory for controller alb
         value = module.vpc.vpc_id
       },
@@ -129,39 +159,82 @@ module "eks" {
         name  = "tag"
         value = "v2.5.4"
       },
-      {
-        name  = "tolerations[0].key"
-        value = "environment"
-      },
-      {
-        name  = "tolerations[0].operator"
-        value = "Equal"
-      },
-      {
-        name  = "tolerations[0].value"
-        value = "hmg"
-      },
-      {
-        name  = "tolerations[0].effect"
-        value = "NoSchedule"
-      }
+      # {
+      #   name  = "nodeSelector.Environment"
+      #   value = "hmg"
+      # },
+      # {
+      #   name  = "tolerations[0].key"
+      #   value = "environment"
+      # },
+      # {
+      #   name  = "tolerations[0].operator"
+      #   value = "Equal"
+      # },
+      # {
+      #   name  = "tolerations[0].value"
+      #   value = "hmg"
+      # },
+      # {
+      #   name  = "tolerations[0].effect"
+      #   value = "NoSchedule"
+      # }
     ]
   }
 
-  ## GROUPS NODES
+  ## CUSTOM_HELM
+
+  # custom_helm = {
+  #   aws-secrets-manager = {
+  #     name             = "aws-secrets-manager"
+  #     namespace        = "kube-system"
+  #     repository       = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
+  #     chart            = "secrets-store-csi-driver-provider-aws"
+  #     version          = "0.3.4"
+  #     create_namespace = false
+  #     #values = file("${path.module}/values.yaml")
+  #     values = []
+  #   }
+  #   secret-csi = {
+  #     name             = "secret-csi"
+  #     namespace        = "kube-system"
+  #     repository       = "https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
+  #     chart            = "secrets-store-csi-driver"
+  #     version          = "v1.3.4"
+  #     create_namespace = false
+  #     #values = file("${path.module}/values.yaml")
+  #     values = []
+  #   }
+  # }
+
   nodes_spot = {
+
     spotinst = {
-      create_node_spotinst         = true
+      create_node_spotinst = false
+
       node_name                    = "spotinst"
-      cluster_version              = "1.24"
+      cluster_version              = "1.28"
       desired_size                 = 1
       max_size                     = 3
       min_size                     = 1
-      volume_type                  = "gp3"
-      volume_size                  = 20
       preferred_availability_zones = ["us-east-1c"]
-      instance_types_spot          = ["m4.large", "m5.large", "m5a.large", "r4.large", "r5.large", "r5a.large"]
+      instance_types_spot          = ["t3.medium", "t3a.medium"]
+      spot_percentage              = 100
+      taints_lt                    = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+      labels_lt                    = "--node-labels=eks.amazonaws.com/nodegroup=spotinst"
+      #image_id                     = "ami-0df33cb954c3f5200" ## If empty, update ami if available
+      ebs_block_device = [
+        {
+          volume_type = "gp3"
+          volume_size = 20
+        },
+      ]
+      spotinst_tags = [
+        {
+          key   = "Environment"
+          value = "${local.environment}"
+        }
+      ]
     }
   }
 }
-

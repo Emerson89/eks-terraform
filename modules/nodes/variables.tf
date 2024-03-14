@@ -1,3 +1,8 @@
+variable "image_id" {
+  type    = string
+  default = ""
+}
+
 variable "max-pods" {
   type    = number
   default = 17

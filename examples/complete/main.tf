@@ -3,11 +3,6 @@ provider "aws" {
   region  = var.region
 }
 
-provider "spotinst" {
-  token   = ""
-  account = ""
-}
-
 ##
 locals {
   environment = "hmg"
@@ -68,16 +63,20 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.6"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
 
-  cluster_name              = local.cluster_name
-  kubernetes_version        = "1.24"
-  subnet_ids                = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
-  environment               = local.environment
-  endpoint_private_access   = true
-  endpoint_public_access    = true
-  
-  ## Additional security-group cluster **Required karpenter**
+  cluster_name            = local.cluster_name
+  kubernetes_version      = "1.28"
+  subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
+  environment             = local.environment
+  endpoint_private_access = true
+  endpoint_public_access  = true
+
+  ## create_aws_auth_configmap **Required Self manager nodes and Spotinst**
+  create_aws_auth_configmap = false
+  manage_aws_auth_configmap = true
+
+  ## Additional security-group cluster **Required karpenter and Spotinst**
   security_additional = true
   vpc_id              = module.vpc.vpc_id
   # additional_rules_security_group = {
@@ -110,7 +109,7 @@ module "eks" {
   create_core    = false
   create_vpc_cni = false
   create_proxy   = false
-  
+
   ## Configuration custom values recommendation to use "set"
 
   ## Velero
@@ -127,7 +126,7 @@ module "eks" {
   filesystem_id      = "fs-92107410"
 
   ## Controller EBS Helm
-  aws-ebs-csi-driver = true
+  aws-ebs-csi-driver = false
 
   ## Configuration custom values recommendation to use "set"
   # custom_values_ebs = {
@@ -147,7 +146,7 @@ module "eks" {
   external-dns = false
 
   ## Controller ASG
-  aws-autoscaler-controller = true
+  aws-autoscaler-controller = false
 
   ## karpenter ASG test v1.24 k8s
   karpenter         = false
@@ -218,15 +217,16 @@ module "eks" {
   ## GROUPS NODES
   nodes = {
     infra = {
-      create_node             = true
+      create_node             = false
       node_name               = "infra"
-      cluster_version_manager = "1.24"
+      cluster_version_manager = "1.28"
       desired_size            = 1
-      max_size                = 6
+      max_size                = 5
       min_size                = 1
-      instance_types          = ["t3.medium","t3a.medium"]
+      instance_types          = ["t3.medium", "t3a.medium"]
       disk_size               = 20
       capacity_type           = "SPOT"
+      #release_version         = "1.28.5-20240227" ## If empty, update ami if available
     }
 
     infra-lt = {
@@ -234,13 +234,14 @@ module "eks" {
       launch_create         = false
       name_lt               = "lt"
       node_name             = "infra-lt"
-      cluster_version       = "1.24"
+      cluster_version       = "1.28"
       desired_size          = 1
       max_size              = 3
       min_size              = 1
       instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
+      #image_id              = "ami-0df33cb954c3f5200" ## If empty, update ami if available
 
       labels = {
         Environment = "${local.environment}"
@@ -276,7 +277,7 @@ module "eks" {
       create_node           = false
       launch_create         = false
       asg_create            = false
-      cluster_version       = "1.24"
+      cluster_version       = "1.28"
       name_lt               = "lt-asg"
       desired_size          = 1
       max_size              = 2
@@ -309,17 +310,33 @@ module "eks" {
   }
 
   nodes_spot = {
+
     spotinst = {
-      create_node_spotinst         = false
+      create_node_spotinst = false
+
       node_name                    = "spotinst"
-      cluster_version              = "1.24"
+      cluster_version              = "1.28"
       desired_size                 = 1
       max_size                     = 3
       min_size                     = 1
-      volume_type                  = "gp3"
-      volume_size                  = 20
       preferred_availability_zones = ["us-east-1c"]
-      instance_types_spot          = ["m4.large", "m5.large", "m5a.large", "r4.large", "r5.large", "r5a.large"]
+      instance_types_spot          = ["t3.medium", "t3a.medium"]
+      spot_percentage              = 100
+      taints_lt                    = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+      labels_lt                    = "--node-labels=eks.amazonaws.com/nodegroup=spotinst"
+      #image_id                     = "ami-0df33cb954c3f5200" ## If empty, update ami if available
+      ebs_block_device = [
+        {
+          volume_type = "gp3"
+          volume_size = 20
+        },
+      ]
+      spotinst_tags = [
+        {
+          key   = "Environment"
+          value = "${local.environment}"
+        }
+      ]
     }
   }
 }

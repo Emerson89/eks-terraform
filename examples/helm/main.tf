@@ -15,7 +15,7 @@ provider "helm" {
   }
 }
 
-odule "metrics-server" {
+module "metrics-server" {
   source = "github.com/Emerson89/eks-terraform.git//modules//helm?ref=v1.0.0"
 
   helm_release = {

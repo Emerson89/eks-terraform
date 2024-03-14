@@ -76,7 +76,7 @@ module "karpenter" {
     })])
 
   }
-  
+
   set = try(var.custom_values_karpenter["set"], {})
 
   depends_on = [

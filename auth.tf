@@ -25,7 +25,7 @@ locals {
   }
 }
 
-resource "kubernetes_config_map" "aws_auth" {
+resource "kubernetes_config_map_v1" "aws_auth" {
   count = var.create_aws_auth_configmap ? 1 : 0
 
   metadata {

@@ -46,7 +46,7 @@ resource "aws_launch_template" "this" {
     }
   }
 
-  image_id      = data.aws_ami.eks-worker[0].id
+  image_id      = var.image_id != "" ? var.image_id : data.aws_ami.eks-worker[0].id
   instance_type = var.instance_types_launch
 
   user_data = base64encode(<<-EOT

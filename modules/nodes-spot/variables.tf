@@ -1,3 +1,35 @@
+variable "autoscale_labels" {
+  description = "Configuration block containing settings to define launch targets for Auto Scaling groups"
+  type        = any
+  default     = []
+}
+
+variable "image_id" {
+  description = "AMI nodes"
+  type        = string
+  default     = ""
+}
+
+variable "taints_lt" {
+  description = "Taints to be applied to the launch template"
+  type        = string
+  #--register-with-taints="dedicated=${local.environment}:NoSchedule"
+  default = ""
+}
+
+variable "labels_lt" {
+  description = "Labels to be applied to the launch template"
+  type        = string
+  #--node-labels="eks.amazonaws.com/nodegroup=${var.name_asg}"
+  default = ""
+}
+
+variable "spotinst_tags" {
+  description = "Configuration block(s) containing resource tags"
+  type        = any
+  default     = []
+}
+
 variable "cluster_name" {
   description = "Name cluster"
   type        = string
@@ -16,16 +48,88 @@ variable "node_name" {
   default     = ""
 }
 
-variable "disk_size" {
-  description = "Size disk node-group"
-  type        = number
-  default     = 20
+variable "ebs_block_device" {
+  description = "Additional EBS block devices to attach to the instance"
+  type        = list(map(string))
+  default     = []
 }
 
-variable "volume_type" {
-  description = "Type disk node-group"
+variable "cpu_credits" {
+  description = "Controls how T3 instances are launched. Valid values: standard, unlimited."
   type        = string
   default     = "standard"
+}
+
+variable "orientation" {
+  description = "(Required, Default: balanced) Select a prediction strategy. Valid values: balanced, costOriented, equalAzDistribution, availabilityOriented"
+  type        = string
+  default     = "balanced"
+}
+
+variable "draining_timeout" {
+  description = "The time in seconds, the instance is allowed to run while detached from the ELB. This is to allow the instance time to be drained from incoming TCP connections before terminating it, during a scale down operation."
+  type        = number
+  default     = 120
+}
+
+variable "utilize_reserved_instances" {
+  description = "In a case of any available reserved instances, Elastigroup will utilize them first before purchasing Spot instances."
+  type        = bool
+  default     = false
+}
+
+variable "fallback_to_ondemand" {
+  description = "In a case of no Spot instances available, Elastigroup will launch on-demand instances instead"
+  type        = bool
+  default     = true
+}
+
+variable "capacity_unit" {
+  description = "The capacity unit to launch instances by. If not specified, when choosing the weight unit, each instance will weight as the number of its vCPUs. Valid values: instance, weight."
+  type        = string
+  default     = "instance"
+}
+
+variable "product" {
+  description = "Operation system type. Valid values: 'Linux/UNIX', 'SUSE Linux', 'Windows'. For EC2 Classic instances: 'Linux/UNIX (Amazon VPC)', 'SUSE Linux (Amazon VPC)', 'Windows (Amazon VPC)'"
+  type        = string
+  default     = "Linux/UNIX"
+}
+
+variable "enable_monitoring" {
+  description = "Indicates whether monitoring is enabled for the instance."
+  type        = bool
+  default     = false
+}
+
+variable "ebs_optimized" {
+  description = "Enable high bandwidth connectivity between instances and AWS’s Elastic Block Store (EBS). For instance types that are EBS-optimized by default this parameter will be ignored."
+  type        = bool
+  default     = false
+}
+
+variable "health_check_type" {
+  description = "The service that will perform health checks for the instance. Valid values: 'ELB', 'HCS', 'TARGET_GROUP', 'MLB', 'EC2', 'MULTAI_TARGET_SET', 'MLB_RUNTIME', 'K8S_NODE', 'NOMAD_NODE', 'ECS_CLUSTER_INSTANCE'"
+  type        = string
+  default     = "K8S_NODE"
+}
+
+variable "health_check_grace_period" {
+  description = "The amount of time, in seconds, after the instance has launched to starts and check its health."
+  type        = number
+  default     = 300
+}
+
+variable "health_check_unhealthy_duration_before_replacement" {
+  description = "The amount of time, in seconds, that we will wait before replacing an instance that is running and became unhealthy (this is only applicable for instances that were once healthy)."
+  type        = number
+  default     = 120
+}
+
+variable "placement_tenancy" {
+  description = "Enable dedicated tenancy. Note: There is a flat hourly fee for each region in which dedicated tenancy is used. Valid values: 'default', 'dedicated'"
+  type        = string
+  default     = "default"
 }
 
 variable "perform_at" {
@@ -125,7 +229,9 @@ variable "min_size" {
 }
 
 variable "tags" {
-  default = []
+  description = "A mapping of tags to assign to the resource"
+  type        = map(string)
+  default     = {}
 }
 
 variable "security-group-node" {
