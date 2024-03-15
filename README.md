@@ -97,7 +97,9 @@ module "eks" {
   ## Configuration custom values recommendation to use "set"
 
   ## Velero
-  velero = false
+  velero             = false
+  create_bucket      = false           ## bucket name used by velero if "true" conflicts with bucket_name_velero
+  #bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
 
   ## Controller ingress-nginx
   ingress-nginx = false
@@ -331,12 +333,16 @@ module "eks" {
 
 *If you want to create a bucket, just use the variable **create_bucket=true***
 
+```
 velero             = true
-create_bucket      = true           ## bucket name used by velero if "true" conflicts with bucket_name_velero
+create_bucket      = true ## bucket name used by velero if "true" conflicts with bucket_name_velero
+```
 
-*Se for utilizar um bucket já criado basta utilizar a variavel **bucket_name_velero** conflicts with create_bucket*
+*If you want to use a bucket that has already been created, just use the variable **bucket_name_velero** conflicts with create_bucket*.
 
+``` 
 bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
+```
 #
 **Manager users, roles, accounts**
 
