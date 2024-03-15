@@ -70,6 +70,24 @@ variable "velero" {
   default     = false
 }
 
+variable "create_bucket" {
+  description = "Bucket use for velero conflicts with bucket_name_velero"
+  type        = bool
+  default     = false
+}
+
+variable "bucket_name_velero" {
+  description = "Bucket name already created for use in velero conflicts with create_bucket"
+  type        = string
+  default     = ""
+}
+
+variable "version_image_velero" {
+  description = "Image version velero"
+  type        = string
+  default     = "v1.13.1"
+}
+
 variable "custom_values_velero" {
   description = "Custom velero a Release is an instance of a chart running in a Kubernetes cluster"
   type        = any

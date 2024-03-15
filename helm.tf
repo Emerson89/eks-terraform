@@ -88,7 +88,7 @@ module "karpenter" {
 ## Velero
 
 resource "aws_s3_bucket" "this" {
-  count = var.velero ? 1 : 0
+  count = var.velero && var.create_bucket ? 1 : 0
 
   bucket_prefix = "velero-"
   force_destroy = var.force_destroy
@@ -116,7 +116,7 @@ module "iam-velero" {
       "string"         = "StringEquals"
       "namespace"      = "velero"
       "policy" = templatefile("${path.module}/templates/policy-velero.json", {
-        bucket_name = "${aws_s3_bucket.this[0].bucket}"
+        bucket_name = var.create_bucket ? "${aws_s3_bucket.this[0].bucket}" : var.bucket_name_velero
       })
     }
   }
@@ -136,9 +136,10 @@ module "velero" {
     create_namespace = true
 
     values = try(var.custom_values_velero["values"], [templatefile("${path.module}/templates/values-velero.yaml", {
-      aws_region     = "${data.aws_region.current.name}"
-      bucket_name    = "${aws_s3_bucket.this[0].bucket}"
-      aws_arn_velero = module.iam-velero[0].arn[0]
+      aws_region           = "${data.aws_region.current.name}"
+      bucket_name          = var.create_bucket ? "${aws_s3_bucket.this[0].bucket}" : var.bucket_name_velero
+      aws_arn_velero       = module.iam-velero[0].arn[0]
+      version_image_velero = var.version_image_velero
     })])
 
   }

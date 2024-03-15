@@ -3,6 +3,13 @@ provider "aws" {
   region  = var.region
 }
 
+provider "spotinst" {
+  enabled = false ##Boolean value to enable or disable the provider.
+
+  token   = ""
+  account = ""
+}
+
 ##
 locals {
   environment = "hmg"
@@ -63,7 +70,8 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
+  #source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
+  source = "../.."
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.28"
@@ -77,7 +85,7 @@ module "eks" {
   manage_aws_auth_configmap = true
 
   ## Additional security-group cluster **Required karpenter and Spotinst**
-  security_additional = true
+  security_additional = false
   vpc_id              = module.vpc.vpc_id
   # additional_rules_security_group = {
   #   # Karpenter
@@ -100,7 +108,7 @@ module "eks" {
   #   }
   # }
 
-  private_subnet = module.vpc.private_ids
+  private_subnet = [module.vpc.private_ids[0]]
 
   tags = local.tags_eks
 
@@ -113,7 +121,9 @@ module "eks" {
   ## Configuration custom values recommendation to use "set"
 
   ## Velero
-  velero = false
+  velero             = false
+  create_bucket      = false           ## bucket name used by velero if "true" conflicts with bucket_name_velero
+  #bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
 
   ## Controller ingress-nginx
   ingress-nginx = false
@@ -146,7 +156,7 @@ module "eks" {
   external-dns = false
 
   ## Controller ASG
-  aws-autoscaler-controller = false
+  aws-autoscaler-controller = true
 
   ## karpenter ASG test v1.24 k8s
   karpenter         = false
@@ -217,7 +227,7 @@ module "eks" {
   ## GROUPS NODES
   nodes = {
     infra = {
-      create_node             = false
+      create_node             = true
       node_name               = "infra"
       cluster_version_manager = "1.28"
       desired_size            = 1
@@ -309,35 +319,35 @@ module "eks" {
     }
   }
 
-  nodes_spot = {
+  # nodes_spot = {
 
-    spotinst = {
-      create_node_spotinst = false
+  #   spotinst = {
+  #     create_node_spotinst = false
 
-      node_name                    = "spotinst"
-      cluster_version              = "1.28"
-      desired_size                 = 1
-      max_size                     = 3
-      min_size                     = 1
-      preferred_availability_zones = ["us-east-1c"]
-      instance_types_spot          = ["t3.medium", "t3a.medium"]
-      spot_percentage              = 100
-      taints_lt                    = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
-      labels_lt                    = "--node-labels=eks.amazonaws.com/nodegroup=spotinst"
-      #image_id                     = "ami-0df33cb954c3f5200" ## If empty, update ami if available
-      ebs_block_device = [
-        {
-          volume_type = "gp3"
-          volume_size = 20
-        },
-      ]
-      spotinst_tags = [
-        {
-          key   = "Environment"
-          value = "${local.environment}"
-        }
-      ]
-    }
-  }
+  #     node_name                    = "spotinst"
+  #     cluster_version              = "1.28"
+  #     desired_size                 = 1
+  #     max_size                     = 3
+  #     min_size                     = 1
+  #     preferred_availability_zones = ["us-east-1c"]
+  #     instance_types_spot          = ["t3.medium", "t3a.medium"]
+  #     spot_percentage              = 100
+  #     taints_lt                    = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+  #     labels_lt                    = "--node-labels=eks.amazonaws.com/nodegroup=spotinst"
+  #     #image_id                     = "ami-0df33cb954c3f5200" ## If empty, update ami if available
+  #     ebs_block_device = [
+  #       {
+  #         volume_type = "gp3"
+  #         volume_size = 20
+  #       },
+  #     ]
+  #     spotinst_tags = [
+  #       {
+  #         key   = "Environment"
+  #         value = "${local.environment}"
+  #       }
+  #     ]
+  #   }
+  # }
 }
 

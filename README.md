@@ -326,7 +326,19 @@ module "eks" {
 }
 ```
 #
-***Manager users, roles, accounts***
+
+**Addon Velero**
+
+*If you want to create a bucket, just use the variable **create_bucket=true***
+
+velero             = true
+create_bucket      = true           ## bucket name used by velero if "true" conflicts with bucket_name_velero
+
+*Se for utilizar um bucket já criado basta utilizar a variavel **bucket_name_velero** conflicts with create_bucket*
+
+bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
+#
+**Manager users, roles, accounts**
 
 ```hcl
   mapRoles = [
@@ -348,7 +360,7 @@ module "eks" {
   ]
 ```
 
-***Manager rbac permissions***
+**Manager rbac permissions**
 
 ```hcl
   mapRoles = [
@@ -419,7 +431,7 @@ rbac = {
     }
   }
 ```
-
+#
 ***Only Self manager nodes***
 
 ```hcl
@@ -477,7 +489,7 @@ module "eks" {
   }
 }
 ```
-
+#
 ***Karpenter ASG***
 
 ```hcl
@@ -576,8 +588,8 @@ nodes = {
   }
 }
 ```
-
-***Only Self manager nodes spotinst require create account https://console.spotinst.com/spt/auth/signIn***
+#
+**Only Self manager nodes spotinst require create account https://console.spotinst.com/spt/auth/signIn**
 ***Configuration provider https://registry.terraform.io/providers/spotinst/spotinst/latest/docs***
 
 ```hcl
@@ -633,15 +645,13 @@ module "eks" {
 ```
 #
 ## For update eks
-
+#
 ```
 terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 ```
 #
-#
 ## For other examples access
 #
-
 ## Modules
 
 | Name | Source | Version |
@@ -717,9 +727,11 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_aws-ebs-csi-driver"></a> [aws-ebs-csi-driver](#input\_aws-ebs-csi-driver) | Install release helm controller ebs | `bool` | `false` | no |
 | <a name="input_aws-efs-csi-driver"></a> [aws-efs-csi-driver](#input\_aws-efs-csi-driver) | Install release helm controller efs | `bool` | `false` | no |
 | <a name="input_aws-load-balancer-controller"></a> [aws-load-balancer-controller](#input\_aws-load-balancer-controller) | Install release helm controller alb | `bool` | `false` | no |
+| <a name="input_bucket_name_velero"></a> [bucket\_name\_velero](#input\_bucket\_name\_velero) | Bucket name already created for use in velero conflicts with create\_bucket | `string` | `""` | no |
 | <a name="input_cert-manager"></a> [cert-manager](#input\_cert-manager) | Install release helm controller cert-manager | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name cluster | `string` | `"k8s"` | no |
 | <a name="input_create_aws_auth_configmap"></a> [create\_aws\_auth\_configmap](#input\_create\_aws\_auth\_configmap) | Create configmap aws-auth | `bool` | `false` | no |
+| <a name="input_create_bucket"></a> [create\_bucket](#input\_create\_bucket) | Bucket use for velero conflicts with bucket\_name\_velero | `bool` | `false` | no |
 | <a name="input_create_core"></a> [create\_core](#input\_create\_core) | Install addons core | `bool` | `false` | no |
 | <a name="input_create_ebs"></a> [create\_ebs](#input\_create\_ebs) | Install addons ebs | `bool` | `false` | no |
 | <a name="input_create_proxy"></a> [create\_proxy](#input\_create\_proxy) | Install addons proxy | `bool` | `false` | no |
@@ -761,6 +773,7 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | Subnet private | `list(any)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(string)` | `{}` | no |
 | <a name="input_velero"></a> [velero](#input\_velero) | Install release helm velero | `bool` | `false` | no |
+| <a name="input_version_image_velero"></a> [version\_image\_velero](#input\_version\_image\_velero) | Image version velero | `string` | `"v1.13.1"` | no |
 | <a name="input_version_karpenter"></a> [version\_karpenter](#input\_version\_karpenter) | Install release helm karpenter | `string` | `"v0.34.0"` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id | `string` | `""` | no |
 
