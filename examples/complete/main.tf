@@ -70,8 +70,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  #source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
-  source = "../.."
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.28"
