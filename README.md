@@ -45,6 +45,48 @@ Some of the addon/controller policies that are currently supported include:
 #
 ## Usage
 #
+
+**For basic execution go to examples/basic**
+
+```hcl
+module "eks" {
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+
+  cluster_name            = local.cluster_name
+  kubernetes_version      = "1.28"
+  subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
+  environment             = local.environment
+  endpoint_private_access = true
+  endpoint_public_access  = true
+
+  private_subnet = [module.vpc.private_ids[0]]
+
+  tags = local.tags_eks
+
+  ## Controller ASG
+  aws-autoscaler-controller = true
+
+  ## GROUPS NODES
+  nodes = {
+    infra = {
+      create_node             = true
+      node_name               = "infra"
+      cluster_version_manager = "1.28"
+      desired_size            = 1
+      max_size                = 5
+      min_size                = 1
+      instance_types          = ["t3.medium", "t3a.medium"]
+      disk_size               = 20
+      capacity_type           = "SPOT"
+      #release_version         = "1.28.5-20240227" ## If empty, update ami if available
+    }
+  }
+}
+```
+#
+
+**For complete execution go to examples/complete**
+
 ```hcl
 module "eks" {
   source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
