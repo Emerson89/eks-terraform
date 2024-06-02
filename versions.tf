@@ -24,3 +24,10 @@ terraform {
     }
   }
 }
+
+provider "spotinst" {
+  enabled = var.enabled_provider_spotinst ##Boolean value to enable or disable the provider.
+
+  token   = var.token
+  account = var.account_spotinst
+}

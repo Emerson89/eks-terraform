@@ -1,3 +1,18 @@
+variable "token" {
+  type    = string
+  default = ""
+}
+
+variable "account_spotinst" {
+  type    = string
+  default = ""
+}
+
+variable "enabled_provider_spotinst" {
+  type    = bool
+  default = false
+}
+
 variable "nodes" {
   description = "Nodes general"
   type        = any
@@ -100,7 +115,7 @@ variable "karpenter" {
   default     = false
 }
 
-variable "version_karpenter" {
+variable "version_chart_karpenter" {
   description = "Install release helm karpenter "
   type        = string
   default     = "v0.34.0"
@@ -321,4 +336,52 @@ variable "rbac" {
   description = "Map rbac configuration"
   type        = any
   default     = {}
+}
+
+variable "version_chart_velero" {
+  description = "Version chart velero"
+  type        = string
+  default     = "6.1.0"
+}
+
+variable "version_chart_nginx" {
+  description = "Version chart nginx"
+  type        = string
+  default     = "4.10.0"
+}
+
+variable "version_chart_cert" {
+  description = "Version chart cert-manager"
+  type        = string
+  default     = "v1.14.4"
+}
+
+variable "version_chart_efs" {
+  description = "Version chart efs"
+  type        = string
+  default     = "3.0.3"
+}
+
+variable "version_chart_ebs" {
+  description = "Version chart ebs"
+  type        = string
+  default     = "2.31.0"
+}
+
+variable "version_chart_alb" {
+  description = "Version chart alb"
+  type        = string
+  default     = "1.7.1"
+}
+
+variable "version_chart_asg" {
+  description = "Version chart asg"
+  type        = string
+  default     = "9.37.0"
+}
+
+variable "version_chart_external_dns" {
+  description = "Version chart dns"
+  type        = string
+  default     = "1.14.4"
 }

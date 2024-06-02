@@ -3,14 +3,6 @@ provider "aws" {
   region  = var.region
 }
 
-provider "spotinst" {
-  enabled = false ##Boolean value to enable or disable the provider.
-
-  token   = ""
-  account = ""
-}
-
-##
 locals {
   environment = "hmg"
   tags = {
@@ -70,7 +62,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.28"
@@ -120,15 +112,42 @@ module "eks" {
   ## Configuration custom values recommendation to use "set"
 
   ## Velero
-  velero             = false
-  create_bucket      = false           ## bucket name used by velero if "true" conflicts with bucket_name_velero
+  velero        = false
+  create_bucket = false ## bucket name used by velero if "true" conflicts with bucket_name_velero
   #bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
 
   ## Controller ingress-nginx
   ingress-nginx = false
+  ## Enable Snippet and internal
+  # custom_values_nginx = {
+  #   set = [
+  #     {
+  #       name  = "controller.service.type"
+  #       value = "LoadBalancer"
+  #     },
+  #     {
+  #       name  = "controller.allowSnippetAnnotations"
+  #       value = "true"
+  #     },
+  #     {
+  #       name  = "controller.service.external.enabled"
+  #       value = "false"
+  #     },
+  #     {
+  #       name  = "controller.service.internal.enabled"
+  #       value = "true"
+  #     },
+  #     {
+  #       name  = "controller.service.internal.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-internal"
+  #       value = "true"
+  #     }
+  #   ]
+  # }
 
   ## Cert-manager
   cert-manager = false
+  ## Version chart
+  version_chart_cert = "v1.14.4"
 
   ## EFS controller
   aws-efs-csi-driver = false
@@ -158,8 +177,8 @@ module "eks" {
   aws-autoscaler-controller = true
 
   ## karpenter ASG test v1.24 k8s
-  karpenter         = false
-  version_karpenter = "v0.34.0"
+  karpenter               = false
+  version_chart_karpenter = "v0.34.0"
 
   ## Controller ALB
   aws-load-balancer-controller = false

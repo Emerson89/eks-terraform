@@ -47,8 +47,13 @@ Some of the addon/controller policies that are currently supported include:
 #
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
-
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  
+  ## Config provider spotinst
+  enabled_provider_spotinst = true
+  account_spotinst          = ""
+  token                     = ""
+  
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.28"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
@@ -103,6 +108,31 @@ module "eks" {
 
   ## Controller ingress-nginx
   ingress-nginx = false
+  ## Enable Snippet and internal
+  # custom_values_nginx = {
+  #   set = [
+  #     {
+  #       name  = "controller.service.type"
+  #       value = "LoadBalancer"
+  #     },
+  #     {
+  #       name  = "controller.allowSnippetAnnotations"
+  #       value = "true"
+  #     },
+  #     {
+  #       name  = "controller.service.external.enabled"
+  #       value = "false"
+  #     },
+  #     {
+  #       name  = "controller.service.internal.enabled"
+  #       value = "true"
+  #     },
+  #     {
+  #       name  = "controller.service.internal.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-internal"
+  #       value = "true"
+  #     }
+  #   ]
+  # }
 
   ## Cert-manager
   cert-manager = false
@@ -442,7 +472,7 @@ rbac = {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.28"
@@ -500,7 +530,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
 
   ...
   ## Additional security-group cluster **Required karpenter**
@@ -598,9 +628,20 @@ nodes = {
 **Only Self manager nodes spotinst require create account https://console.spotinst.com/spt/auth/signIn**
 ***Configuration provider https://registry.terraform.io/providers/spotinst/spotinst/latest/docs***
 
+- Set provider
+
+```hcl
+provider "spotinst" {
+  enabled = true ##Boolean value to enable or disable the provider.
+
+  token   = ""
+  account = ""
+}
+```
+#
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.7"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.28"

@@ -67,7 +67,7 @@ module "karpenter" {
     namespace        = try(var.custom_values_karpenter["namespace"], "karpenter")
     repository       = "oci://public.ecr.aws/karpenter"
     chart            = "karpenter"
-    version          = var.version_karpenter
+    version          = var.version_chart_karpenter
     create_namespace = true
 
     values = try(var.custom_values_karpenter["values"], [templatefile("${path.module}/templates/values-karpenter.yaml", {
@@ -133,6 +133,7 @@ module "velero" {
     namespace        = try(var.custom_values_velero["namespace"], "velero")
     repository       = "https://vmware-tanzu.github.io/helm-charts"
     chart            = "velero"
+    version          = var.version_chart_velero
     create_namespace = true
 
     values = try(var.custom_values_velero["values"], [templatefile("${path.module}/templates/values-velero.yaml", {
@@ -165,6 +166,7 @@ module "ingress-helm" {
     namespace        = try(var.custom_values_nginx["namespace"], "ingress-nginx")
     repository       = "https://kubernetes.github.io/ingress-nginx"
     chart            = "ingress-nginx"
+    version          = var.version_chart_nginx
     create_namespace = true
 
     values = try(var.custom_values_nginx["values"], [])
@@ -192,6 +194,7 @@ module "cert-helm" {
     namespace        = try(var.custom_values_nginx["namespace"], "cert-manager")
     repository       = "https://charts.jetstack.io"
     chart            = "cert-manager"
+    version          = var.version_chart_cert
     create_namespace = true
 
     values = try(var.custom_values_cert_manager["values"], [file("${path.module}/templates/values-cert.yaml")])
@@ -237,6 +240,7 @@ module "efs-helm" {
     namespace  = try(var.custom_values_efs["namespace"], "kube-system")
     repository = "https://kubernetes-sigs.github.io/aws-efs-csi-driver"
     chart      = "aws-efs-csi-driver"
+    version    = var.version_chart_efs
 
     values = try(var.custom_values_efs["values"], [templatefile("${path.module}/templates/values-efs.yaml", {
       aws_region    = "${data.aws_region.current.name}"
@@ -283,6 +287,7 @@ module "ebs-helm" {
     name       = try(var.custom_values_ebs["name"], local.name_ebs)
     namespace  = try(var.custom_values_ebs["namespace"], "kube-system")
     repository = "https://kubernetes-sigs.github.io/aws-ebs-csi-driver"
+    version    = var.version_chart_ebs
     chart      = "aws-ebs-csi-driver"
 
     values = try(var.custom_values_ebs["values"], [templatefile("${path.module}/templates/values-ebs.yaml", {
@@ -300,6 +305,25 @@ module "ebs-helm" {
     module.node-spot
   ]
 
+}
+
+resource "kubernetes_annotations" "this" {
+  count = var.aws-ebs-csi-driver ? 1 : 0
+
+  api_version = "storage.k8s.io/v1"
+  kind        = "StorageClass"
+  force       = true
+
+  metadata {
+    name = "gp2"
+  }
+  annotations = {
+    "storageclass.kubernetes.io/is-default-class" = "false"
+  }
+
+  depends_on = [
+    module.ebs-helm[0]
+  ]
 }
 
 ## ALB
@@ -331,6 +355,7 @@ module "alb" {
     namespace  = try(var.custom_values_alb["namespace"], "kube-system")
     repository = "https://aws.github.io/eks-charts"
     chart      = "aws-load-balancer-controller"
+    version    = var.version_chart_alb
 
     values = try(var.custom_values_alb["values"], [templatefile("${path.module}/templates/values-alb.yaml", {
       aws_region   = "${data.aws_region.current.name}"
@@ -381,6 +406,7 @@ module "asg" {
     namespace  = try(var.custom_values_asg["namespace"], "kube-system")
     repository = "https://kubernetes.github.io/autoscaler"
     chart      = "cluster-autoscaler"
+    version    = var.version_chart_asg
 
     values = try(var.custom_values_asg["values"], [templatefile("${path.module}/templates/values-asg.yaml", {
       aws_region   = "${data.aws_region.current.name}"
@@ -414,6 +440,7 @@ module "external-dns" {
     namespace  = try(var.custom_values_external-dns["namespace"], "kube-system")
     repository = "https://kubernetes-sigs.github.io/external-dns/"
     chart      = "external-dns"
+    version    = var.version_chart_external_dns
 
     values = try(var.custom_values_external-dns["values"], [templatefile("${path.module}/templates/values-external.yaml", {
       domain = "${var.domain}"
