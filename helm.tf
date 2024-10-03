@@ -141,6 +141,7 @@ module "velero" {
       bucket_name          = var.create_bucket ? "${aws_s3_bucket.this[0].bucket}" : var.bucket_name_velero
       aws_arn_velero       = module.iam-velero[0].arn[0]
       version_image_velero = var.version_image_velero
+      version_plugin_aws   = var.version_plugin_aws
     })])
 
   }

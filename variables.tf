@@ -344,6 +344,12 @@ variable "version_chart_velero" {
   default     = "6.1.0"
 }
 
+variable "version_plugin_aws" {
+  description = "Image version velero"
+  type        = string
+  default     = "1.7.0"
+}
+
 variable "version_chart_nginx" {
   description = "Version chart nginx"
   type        = string

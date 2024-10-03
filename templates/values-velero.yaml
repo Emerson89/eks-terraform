@@ -20,7 +20,7 @@ initContainers:
   #     - mountPath: /target
   #       name: plugins
   - name: velero-plugin-for-aws
-    image: velero/velero-plugin-for-aws:v1.7.0
+    image: velero/velero-plugin-for-aws:v${version_plugin_aws}
   #   imagePullPolicy: IfNotPresent
     volumeMounts:
        - mountPath: /target

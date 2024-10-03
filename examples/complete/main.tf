@@ -115,6 +115,9 @@ module "eks" {
   velero        = false
   create_bucket = false ## bucket name used by velero if "true" conflicts with bucket_name_velero
   #bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
+  version_chart_velero = "6.1.0"
+  version_image_velero = "v1.13.1"
+  version_plugin_aws   = "1.7.0"
 
   ## Controller ingress-nginx
   ingress-nginx = false
