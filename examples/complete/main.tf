@@ -11,8 +11,6 @@ locals {
 
   tags_eks = {
     Environment = "hmg"
-    ## Required karpenter
-    "karpenter.sh/discovery" = local.cluster_name
   }
 
   cluster_name = "k8s"
@@ -20,15 +18,15 @@ locals {
   public_subnets_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared",
     "kubernetes.io/role/elb"                      = 1,
-    ## Required karpenter
-    "karpenter.sh/discovery" = local.cluster_name
+    ## karpenter
+    #"karpenter.sh/discovery" = local.cluster_name
   }
 
   private_subnets_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared",
     "kubernetes.io/role/internal-elb"             = 1,
-    ## Required karpenter
-    "karpenter.sh/discovery" = local.cluster_name
+    ## karpenter
+    #"karpenter.sh/discovery" = local.cluster_name
 
   }
 }
@@ -75,7 +73,7 @@ module "eks" {
   create_aws_auth_configmap = false
   manage_aws_auth_configmap = true
 
-  ## Additional security-group cluster **Required karpenter and Spotinst**
+  ## Additional security-group cluster **Required Spotinst**
   security_additional = false
   vpc_id              = module.vpc.vpc_id
   # additional_rules_security_group = {
@@ -113,7 +111,8 @@ module "eks" {
 
   ## Velero
   velero        = false
-  create_bucket = false ## bucket name used by velero if "true" conflicts with bucket_name_velero
+  ## bucket name used by velero if "true" conflicts with bucket_name_velero
+  create_bucket = false 
   #bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
   version_chart_velero = "6.1.0"
   version_image_velero = "v1.13.1"

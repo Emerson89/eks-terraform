@@ -107,7 +107,7 @@ module "eks" {
   create_aws_auth_configmap = false
   manage_aws_auth_configmap = true
 
-  ## Additional security-group cluster **Required karpenter and Spotinst**
+  ## Additional security-group cluster **Required Spotinst**
   security_additional = true
   vpc_id              = module.vpc.vpc_id
   # additional_rules_security_group = {
@@ -531,39 +531,61 @@ module "eks" {
   vpc_id              = module.vpc.vpc_id
 
   nodes = {
-    infra-asg = {
-      launch_create         = true
-      asg_create            = true
-      cluster_version       = "1.28"
-      name_lt               = "lt-asg"
-      desired_size          = 1
-      max_size              = 2
-      min_size              = 1
-      instance_types_launch = "t3.medium"
-      volume-size           = 20
-      volume-type           = "gp3"
-      taint_lt              = "--register-with-taints=dedicated=stg:NoSchedule"
-      labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
-      name_asg              = "infra"
-      vpc_zone_identifier   = ["subnet-abacabc123","subnet-abacabc123","subnet-abcabac123"]
+    infra-asg-spot = {
+      launch_create              = false
+      asg_create                 = false
+      cluster_version            = "1.23"
+      name_lt                    = "lt-asg"
+      desired_size               = 1
+      max_size                   = 2
+      min_size                   = 1
+      instance_types_launch      = "t3.medium"
+      volume-size                = 20
+      volume-type                = "gp3"
+      taints_lt                  = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
+      labels_lt                  = "--node-labels=eks.amazonaws.com/nodegroup=infra"
+      name_asg                   = "infra"
+      vpc_zone_identifier        = module.vpc.private_ids
+      capacity_rebalance         = true
+      default_cooldown           = 300
+      use_mixed_instances_policy = true
+      mixed_instances_policy = {
+        instances_distribution = {
+          on_demand_base_capacity                  = 0
+          on_demand_percentage_above_base_capacity = 0
+          spot_allocation_strategy                 = "price-capacity-optimized"
+          spot_instance_pools                      = 0
+        }
+        override = [
+          {
+            instance_type = "t3.micro"
+          },
+          {
+            instance_type = "t3a.micro"
+          }
+        ]
+
+      }
+
+      termination_policies = ["AllocationStrategy", "OldestLaunchTemplate", "OldestInstance"]
       asg_tags = [
         {
           key                 = "Environment"
-          value               = "stg"
+          value               = "${local.environment}"
           propagate_at_launch = true
         },
         {
           key                 = "Name"
-          value               = "infra"
+          value               = "${local.environment}"
           propagate_at_launch = true
         },
         {
-          key                 = "kubernetes.io/cluster/k8s"
+          key                 = "kubernetes.io/cluster/${local.cluster_name}"
           value               = "owner"
           propagate_at_launch = true
         },
       ]
-    } 
+    }
   }
 }
 ```
@@ -575,18 +597,6 @@ module "eks" {
   source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
 
   ...
-  ## Additional security-group cluster **Required karpenter**
-  security_additional = true
-  vpc_id              = module.vpc.vpc_id
-  
-  ## Add tags to subnets and security groups
-  ## use the eks "tags" variable to add to the security group 
-  
-  tags_eks = {
-    ## Required karpenter
-    "karpenter.sh/discovery" = "<cluster_name>"
-  }
-
   ## karpenter ASG test v1.24 k8s
   karpenter         = true
   version_karpenter = "v0.34.0"
@@ -605,6 +615,9 @@ metadata:
   name: default
 spec:
   template:
+    metadata:
+      labels:
+        Environment: "aplication"
     spec:
       requirements:
         - key: node.kubernetes.io/instance-type
@@ -615,6 +628,10 @@ spec:
             - t3.medium
       nodeClassRef:
         name: default
+      taints:
+        - key: "environment"
+          effect: "NoSchedule" 
+          value: "aplication"  
   limits:
     cpu: 1000
   disruption:
@@ -632,11 +649,13 @@ spec:
   # Required, discovers subnets to attach to instances
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/discovery: "<CLUSTER_NAME>" # replace with your cluster name
+        #karpenter.sh/discovery: "<CLUSTER_NAME>" # replace with your cluster name
+        kubernetes.io/cluster/<CLUSTER_NAME>: shared
   # Required, discovers security groups to attach to instances
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: "<CLUSTER_NAME>" # replace with your cluster name
+        #karpenter.sh/discovery: "<CLUSTER_NAME>" # replace with your cluster name
+        aws:eks:cluster-name: "<CLUSTER_NAME>"
 EOF
 
 ## https://karpenter.sh/v0.32/concepts/
