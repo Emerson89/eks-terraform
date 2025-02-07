@@ -65,6 +65,22 @@ module "eks" {
 
   ## Controller ASG
   aws-autoscaler-controller = true
+  
+  ## Access Entry Configurations for an EKS Cluster.
+  eks_access_entry = {
+     test = {
+       principal_arn = "arn:aws:iam::xxxxxxxxxxxx:user/test-user"
+       type          = "STANDARD"
+
+       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+
+       access_scope = {
+         test = {
+           type = "cluster"
+         }
+       }
+     }
+  }
 
   ## GROUPS NODES
   nodes = {
