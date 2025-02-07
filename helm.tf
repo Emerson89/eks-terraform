@@ -80,7 +80,10 @@ module "karpenter" {
   set = try(var.custom_values_karpenter["set"], {})
 
   depends_on = [
-    module.nodes
+    module.nodes,
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 }
 
@@ -150,7 +153,9 @@ module "velero" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 }
 
@@ -178,7 +183,9 @@ module "ingress-helm" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 
 }
@@ -206,7 +213,9 @@ module "cert-helm" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 
 }
@@ -255,7 +264,9 @@ module "efs-helm" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 
 }
@@ -303,7 +314,9 @@ module "ebs-helm" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 
 }
@@ -370,7 +383,9 @@ module "alb" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 }
 
@@ -422,7 +437,9 @@ module "asg" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 
 }
@@ -454,7 +471,9 @@ module "external-dns" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 
 }
@@ -481,7 +500,9 @@ module "metrics-server" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
 
 }
@@ -510,7 +531,8 @@ module "custom" {
 
   depends_on = [
     module.nodes,
-    module.node-spot
+    module.node-spot,
+    aws_eks_access_entry.this,
+    aws_eks_access_policy_association.this
   ]
-
 }

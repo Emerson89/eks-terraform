@@ -69,6 +69,11 @@ module "eks" {
   create_aws_auth_configmap = false
   manage_aws_auth_configmap = true
 
+  create_access_entry = false
+
+  authentication_mode                         = "CONFIG_MAP"
+  bootstrap_cluster_creator_admin_permissions = true
+
   ## Additional security-group cluster **Required karpenter and Spotinst**
   security_additional = true
   vpc_id              = module.vpc.vpc_id

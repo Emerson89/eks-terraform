@@ -4,7 +4,7 @@ locals {
 }
 
 module "fargate-profile" {
-  source = "github.com/Emerson89/eks-terraform.git//modules//nodes?ref=v1.0.0"
+  source = "github.com/Emerson89/eks-terraform.git//modules//nodes?ref=v1.0.9"
 
   environment    = local.environment
   create_node    = false

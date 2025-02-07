@@ -1,5 +1,5 @@
 module "eks-addons" {
-  source = "github.com/Emerson89/eks-terraform.git//modules//addons?ref=v1.0.0"
+  source = "github.com/Emerson89/eks-terraform.git//modules//addons?ref=v1.0.9"
 
   eks_cluster_id  = "eks_cluster-id"
   openid_connect  = "aws_iam_openid_connect_provider-arn"

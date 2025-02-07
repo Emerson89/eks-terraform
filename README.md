@@ -50,10 +50,10 @@ Some of the addon/controller policies that are currently supported include:
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.28"
+  kubernetes_version      = "1.32"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
@@ -71,14 +71,14 @@ module "eks" {
     infra = {
       create_node             = true
       node_name               = "infra"
-      cluster_version_manager = "1.28"
+      cluster_version_manager = "1.32"
       desired_size            = 1
       max_size                = 5
       min_size                = 1
       instance_types          = ["t3.medium", "t3a.medium"]
       disk_size               = 20
       capacity_type           = "SPOT"
-      #release_version         = "1.28.5-20240227" ## If empty, update ami if available
+      #release_version         = "1.32.5-20240227" ## If empty, update ami if available
     }
   }
 }
@@ -89,7 +89,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
   
   ## Config provider spotinst
   enabled_provider_spotinst = true
@@ -97,7 +97,7 @@ module "eks" {
   token                     = ""
   
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.28"
+  kubernetes_version      = "1.32"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
@@ -106,6 +106,11 @@ module "eks" {
   ## create_aws_auth_configmap **Required Self manager nodes and Spotinst**
   create_aws_auth_configmap = false
   manage_aws_auth_configmap = true
+
+  authentication_mode                         = "CONFIG_MAP"
+  bootstrap_cluster_creator_admin_permissions = true
+
+  create_access_entry = false
 
   ## Additional security-group cluster **Required Spotinst**
   security_additional = true
@@ -514,7 +519,7 @@ rbac = {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.28"
@@ -526,6 +531,10 @@ module "eks" {
   ##Create aws-auth
   create_aws_auth_configmap = true ## Necessary for self-management nodes
   manage_aws_auth_configmap = false
+  
+  create_access_entry                         = false
+  authentication_mode                         = "CONFIG_MAP"
+  bootstrap_cluster_creator_admin_permissions = true
 
   security_additional = true ## Necessary for self-management nodes
   vpc_id              = module.vpc.vpc_id
@@ -534,7 +543,7 @@ module "eks" {
     infra-asg-spot = {
       launch_create              = false
       asg_create                 = false
-      cluster_version            = "1.23"
+      cluster_version            = "1.32"
       name_lt                    = "lt-asg"
       desired_size               = 1
       max_size                   = 2
@@ -594,7 +603,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
 
   ...
   ## karpenter ASG test v1.24 k8s
@@ -702,10 +711,10 @@ provider "spotinst" {
 #
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
 
   cluster_name            = "k8s"
-  kubernetes_version      = "1.28"
+  kubernetes_version      = "1.32"
   subnet_ids              = ["subnet-abcabc123","subnet-abcabc123","subnet-abcabc123"]
   environment             = "hmg"
   endpoint_private_access = true
@@ -714,6 +723,11 @@ module "eks" {
   ##Create aws-auth
   create_aws_auth_configmap = true ## Necessary for self-management nodes and spotinst
   manage_aws_auth_configmap = false
+
+  create_access_entry                         = false
+  authentication_mode                         = "CONFIG_MAP"
+  bootstrap_cluster_creator_admin_permissions = true
+
 
   security_additional = true ## Necessary for self-management nodes and spotinst
   vpc_id              = module.vpc.vpc_id

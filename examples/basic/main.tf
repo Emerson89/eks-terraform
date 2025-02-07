@@ -55,10 +55,10 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.28"
+  kubernetes_version      = "1.32"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
@@ -71,12 +71,31 @@ module "eks" {
   ## Controller ASG
   aws-autoscaler-controller = true
 
+  authentication_mode = "API_AND_CONFIG_MAP"
+
+  create_access_entry = true
+
+  # eks_access_entry = {
+  #   test = {
+  #     principal_arn = "arn:aws:iam::xxxxxxxxxxxx:user/test-user"
+  #     type          = "STANDARD"
+
+  #     policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+
+  #     access_scope = {
+  #       test = {
+  #         type = "cluster"
+  #       }
+  #     }
+  #   }
+  # }
+
   ## GROUPS NODES
   nodes = {
     infra = {
       create_node             = true
       node_name               = "infra"
-      cluster_version_manager = "1.28"
+      cluster_version_manager = "1.32"
       desired_size            = 1
       max_size                = 5
       min_size                = 1

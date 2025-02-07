@@ -16,7 +16,7 @@ provider "helm" {
 }
 
 module "metrics-server" {
-  source = "github.com/Emerson89/eks-terraform.git//modules//helm?ref=v1.0.0"
+  source = "github.com/Emerson89/eks-terraform.git//modules//helm?ref=v1.0.9"
 
   helm_release = {
 

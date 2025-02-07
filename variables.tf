@@ -391,3 +391,27 @@ variable "version_chart_external_dns" {
   type        = string
   default     = "1.14.4"
 }
+
+variable "authentication_mode" {
+  description = "The authentication mode for the cluster. Valid values are CONFIG_MAP, API or API_AND_CONFIG_MAP"
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
+}
+
+variable "create_access_entry" {
+  description = "Whether or not to bootstrap the access config values to the cluster"
+  type        = bool
+  default     = true
+}
+
+variable "eks_access_entry" {
+  description = "Create Access Entry Configurations for an EKS Cluster"
+  type        = any
+  default     = {}
+}
+
+variable "bootstrap_cluster_creator_admin_permissions" {
+  description = "Whether or not to bootstrap the access config values to the cluster"
+  type        = bool
+  default     = false
+}

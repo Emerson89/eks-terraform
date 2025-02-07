@@ -60,18 +60,33 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.8"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.28"
+  kubernetes_version      = "1.32"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
 
-  ## create_aws_auth_configmap **Required Self manager nodes and Spotinst**
-  create_aws_auth_configmap = false
-  manage_aws_auth_configmap = true
+  authentication_mode = "API_AND_CONFIG_MAP"
+
+  create_access_entry = true
+
+  # eks_access_entry = {
+  #   test = {
+  #     principal_arn = "arn:aws:iam::xxxxxxxxxxxx:user/test-user"
+  #     type          = "STANDARD"
+
+  #     policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+
+  #     access_scope = {
+  #       test = {
+  #         type = "cluster"
+  #       }
+  #     }
+  #   }
+  # }
 
   ## Additional security-group cluster **Required Spotinst**
   security_additional = false
@@ -110,9 +125,9 @@ module "eks" {
   ## Configuration custom values recommendation to use "set"
 
   ## Velero
-  velero        = false
+  velero = false
   ## bucket name used by velero if "true" conflicts with bucket_name_velero
-  create_bucket = false 
+  create_bucket = false
   #bucket_name_velero = "velero-123456" ## Bucket name already created for use in velero conflicts with create_bucket
   version_chart_velero = "6.1.0"
   version_image_velero = "v1.13.1"
@@ -176,10 +191,10 @@ module "eks" {
   external-dns = false
 
   ## Controller ASG
-  aws-autoscaler-controller = true
+  aws-autoscaler-controller = false
 
   ## karpenter ASG test v1.24 k8s
-  karpenter               = false
+  karpenter               = true
   version_chart_karpenter = "v0.34.0"
 
   ## Controller ALB
@@ -249,7 +264,7 @@ module "eks" {
     infra = {
       create_node             = true
       node_name               = "infra"
-      cluster_version_manager = "1.28"
+      cluster_version_manager = "1.32"
       desired_size            = 1
       max_size                = 5
       min_size                = 1
@@ -264,7 +279,7 @@ module "eks" {
       launch_create         = false
       name_lt               = "lt"
       node_name             = "infra-lt"
-      cluster_version       = "1.28"
+      cluster_version       = "1.32"
       desired_size          = 1
       max_size              = 3
       min_size              = 1
@@ -307,7 +322,7 @@ module "eks" {
       create_node           = false
       launch_create         = false
       asg_create            = false
-      cluster_version       = "1.28"
+      cluster_version       = "1.32"
       name_lt               = "lt-asg"
       desired_size          = 1
       max_size              = 2

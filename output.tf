@@ -19,7 +19,7 @@ output "cluster_endpoint" {
 }
 
 output "cluster_cert" {
-  value = data.aws_eks_cluster.this.certificate_authority[0].data
+  value = aws_eks_cluster.eks_cluster.certificate_authority[0].data
 }
 
 output "cluster_oidc" {
@@ -28,6 +28,10 @@ output "cluster_oidc" {
 
 output "oidc_arn" {
   value = aws_iam_openid_connect_provider.this.arn
+}
+
+output "oidc_url" {
+  value = aws_iam_openid_connect_provider.this.url
 }
 
 output "master-iam-name" {
@@ -48,4 +52,8 @@ output "node-iam-arn" {
 
 output "node-iam-name-profile" {
   value = aws_iam_instance_profile.iam-node-instance-profile-eks.name
+}
+
+output "cluster_auth" {
+  value = data.aws_eks_cluster_auth.this.token
 }

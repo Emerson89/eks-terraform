@@ -5,5 +5,5 @@ variable "profile" {
 
 variable "region" {
   type    = string
-  default = ""
+  default = "us-east-1"
 }
