@@ -415,3 +415,15 @@ variable "bootstrap_cluster_creator_admin_permissions" {
   type        = bool
   default     = false
 }
+
+variable "public_access_cidrs" {
+  description = " List of CIDR blocks. Indicates which CIDR blocks can access the Amazon EKS public API server endpoint when enabled. EKS defaults this to a list with 0.0.0.0/0."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "webhook_enabled" {
+  description = "webhook karpenter"
+  type        = bool
+  default     = false
+}

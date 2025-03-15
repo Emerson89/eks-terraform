@@ -73,6 +73,7 @@ module "karpenter" {
     values = try(var.custom_values_karpenter["values"], [templatefile("${path.module}/templates/values-karpenter.yaml", {
       CLUSTER_NAME      = "${aws_eks_cluster.eks_cluster.name}"
       aws_arn_karpenter = module.iam-karpenter[0].arn[0]
+      webhook_enabled   = var.webhook_enabled
     })])
 
   }

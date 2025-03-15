@@ -69,6 +69,8 @@ module "eks" {
   endpoint_private_access = true
   endpoint_public_access  = true
 
+  public_access_cidrs = ["182.168.43.32/32"]
+
   authentication_mode = "API_AND_CONFIG_MAP"
 
   create_access_entry = true
@@ -196,6 +198,7 @@ module "eks" {
   ## karpenter ASG test v1.24 k8s
   karpenter               = true
   version_chart_karpenter = "v0.34.0"
+  webhook_enabled         = true
 
   ## Controller ALB
   aws-load-balancer-controller = false
