@@ -26,12 +26,18 @@ locals {
   )
 }
 
+resource "null_resource" "wait_for_cluster" {
+  depends_on = [aws_eks_cluster.eks_cluster]
+}
+
 data "aws_eks_cluster" "this" {
-  name = aws_eks_cluster.eks_cluster.name
+  name       = var.cluster_name
+  depends_on = [null_resource.wait_for_cluster]
 }
 
 data "aws_eks_cluster_auth" "this" {
-  name = aws_eks_cluster.eks_cluster.name
+  name       = var.cluster_name
+  depends_on = [null_resource.wait_for_cluster]
 }
 
 resource "aws_cloudwatch_log_group" "this" {

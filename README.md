@@ -50,7 +50,7 @@ Some of the addon/controller policies that are currently supported include:
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.10"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.32"
@@ -107,7 +107,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
   
   ## Config provider spotinst
   enabled_provider_spotinst = true
@@ -538,7 +538,7 @@ rbac = {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.28"
@@ -622,7 +622,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
 
   ...
   ## karpenter ASG test v1.24 k8s
@@ -730,7 +730,7 @@ provider "spotinst" {
 #
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.32"

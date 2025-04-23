@@ -30,6 +30,10 @@ resource "aws_iam_role" "this" {
   assume_role_policy = data.aws_iam_policy_document.this[each.key].json
   name               = each.key
 
+  lifecycle {
+    ignore_changes = [assume_role_policy]
+  }
+
   tags = merge(
     {
       "Name"     = each.key

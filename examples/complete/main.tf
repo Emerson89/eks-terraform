@@ -60,7 +60,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.32"
@@ -68,8 +68,6 @@ module "eks" {
   environment             = local.environment
   endpoint_private_access = true
   endpoint_public_access  = true
-
-  public_access_cidrs = ["182.168.43.32/32"]
 
   authentication_mode = "API_AND_CONFIG_MAP"
 
