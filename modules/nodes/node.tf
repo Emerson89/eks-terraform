@@ -1,12 +1,16 @@
 data "aws_ssm_parameter" "eks_ami_release_version" {
-  count = var.create_node || var.create_fargate ? 1 : 0
+  count = var.launch_create || var.create_node ? 1 : 0 
 
-  name = "/aws/service/eks/optimized-ami/${var.cluster_version_manager}/amazon-linux-2/recommended/release_version"
+  name = local.ami_type[var.ami_type]
 }
 
 locals {
   launch_template_id      = var.create_node && var.launch_create ? try(aws_launch_template.this[0].id, null) : var.launch_template_id
   launch_template_version = coalesce(var.launch_template_version, try(aws_launch_template.this[0].default_version, "$Default"))
+  ami_type = {
+    AL2_x86_64             = var.launch_create && var.cluster_version < "1.33" ? "/aws/service/eks/optimized-ami/${var.cluster_version}/amazon-linux-2/recommended/image_id" : "/aws/service/eks/optimized-ami/${var.cluster_version}/amazon-linux-2/recommended/release_version"
+    AL2023_x86_64_STANDARD = var.launch_create && var.cluster_version > "1.32" ? "/aws/service/eks/optimized-ami/${var.cluster_version}/amazon-linux-2023/x86_64/standard/recommended/image_id" : "/aws/service/eks/optimized-ami/${var.cluster_version}/amazon-linux-2023/x86_64/standard/recommended/release_version"
+  }
 }
 
 resource "aws_eks_node_group" "eks_node_group" {
@@ -17,7 +21,7 @@ resource "aws_eks_node_group" "eks_node_group" {
   node_role_arn   = var.node-role
   instance_types  = var.launch_create ? null : var.instance_types
   disk_size       = var.launch_create ? null : var.disk_size
-  version         = var.launch_create ? null : var.cluster_version_manager
+  version         = var.launch_create ? null : var.cluster_version
   release_version = var.launch_create ? null : coalesce(var.release_version, data.aws_ssm_parameter.eks_ami_release_version[0].value)
   labels          = var.labels
   capacity_type   = var.capacity_type

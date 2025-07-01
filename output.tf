@@ -57,3 +57,7 @@ output "node-iam-name-profile" {
 output "cluster_auth" {
   value = data.aws_eks_cluster_auth.this.token
 }
+
+output "cluster_service_cidr" {
+  value = aws_eks_cluster.eks_cluster.kubernetes_network_config[0].service_ipv4_cidr
+}

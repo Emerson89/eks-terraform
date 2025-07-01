@@ -1,13 +1,3 @@
-data "aws_ami" "eks-worker" {
-  count = var.launch_create ? 1 : 0
-  filter {
-    name   = "name"
-    values = ["amazon-eks-node-${var.cluster_version}-*"]
-  }
-  most_recent = true
-  owners      = ["amazon"]
-}
-
 resource "aws_launch_template" "this" {
   count = var.launch_create ? 1 : 0
 
@@ -46,10 +36,10 @@ resource "aws_launch_template" "this" {
     }
   }
 
-  image_id      = var.image_id != "" ? var.image_id : data.aws_ami.eks-worker[0].id
+  image_id      = var.image_id != "" ? var.image_id : data.aws_ssm_parameter.eks_ami_release_version[0].value
   instance_type = var.instance_types_launch
 
-  user_data = base64encode(<<-EOT
+  user_data = var.cluster_version < 1.33 ? base64encode(<<-EOT
   MIME-Version: 1.0
   Content-Type: multipart/mixed; boundary="//"
   
@@ -64,7 +54,12 @@ resource "aws_launch_template" "this" {
   fi
   --//--
   EOT
-  )
+  ) : base64encode(templatefile("${path.module}/nodeconfig.mime.tmpl", {
+      cluster_name          = var.cluster_name
+      api_server_endpoint   = var.endpoint
+      certificate_authority = var.certificate_authority
+      cidr_services         = var.cidr_services
+  }))
 
   tags = {
     Name        = format("%s-%s", var.name, var.environment)

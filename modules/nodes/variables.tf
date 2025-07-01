@@ -102,7 +102,7 @@ variable "disk_size" {
 variable "cluster_version" {
   description = "Version cluster"
   type        = string
-  default     = ""
+  default     = "1.32"
 }
 
 variable "environment" {
@@ -326,4 +326,15 @@ variable "iam_instance_profile" {
 variable "pod_execution_role_arn" {
   type    = string
   default = ""
+}
+
+variable "cidr_services" {
+  description = "CIDR services cluster nodeadm required v1.33"
+  type        = string
+  default     = ""
+}
+
+variable "ami_type" {
+  type    = string
+  default = "AL2_x86_64"
 }

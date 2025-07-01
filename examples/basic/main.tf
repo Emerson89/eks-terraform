@@ -55,10 +55,10 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.9"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.32"
+  kubernetes_version      = "1.33"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
@@ -95,13 +95,15 @@ module "eks" {
     infra = {
       create_node             = true
       node_name               = "infra"
-      cluster_version_manager = "1.32"
+      cluster_version_manager = "1.33"
       desired_size            = 1
       max_size                = 5
       min_size                = 1
       instance_types          = ["t3.medium", "t3a.medium"]
       disk_size               = 20
       capacity_type           = "SPOT"
+      ## https://docs.aws.amazon.com/pt_br/eks/latest/userguide/retrieve-ami-id.html
+      ami_type        = "AL2023_x86_64_STANDARD"
       #release_version         = "1.28.5-20240227" ## If empty, update ami if available
     }
   }

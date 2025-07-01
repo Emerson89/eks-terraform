@@ -60,10 +60,10 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.32"
+  kubernetes_version      = "1.33"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
@@ -195,7 +195,7 @@ module "eks" {
 
   ## karpenter ASG test v1.24 k8s
   karpenter               = true
-  version_chart_karpenter = "v0.34.0"
+  version_chart_karpenter = "1.5.0"
   webhook_enabled         = true
 
   ## Controller ALB
@@ -263,15 +263,17 @@ module "eks" {
   ## GROUPS NODES
   nodes = {
     infra = {
-      create_node             = true
-      node_name               = "infra"
-      cluster_version_manager = "1.32"
-      desired_size            = 1
-      max_size                = 5
-      min_size                = 1
-      instance_types          = ["t3.medium", "t3a.medium"]
-      disk_size               = 20
-      capacity_type           = "SPOT"
+      create_node     = true
+      node_name       = "infra"
+      cluster_version = "1.33"
+      desired_size    = 1
+      max_size        = 5
+      min_size        = 1
+      instance_types  = ["t3.medium", "t3a.medium"]
+      disk_size       = 20
+      capacity_type   = "SPOT"
+      ## https://docs.aws.amazon.com/pt_br/eks/latest/userguide/retrieve-ami-id.html
+      ami_type        = "AL2023_x86_64_STANDARD"
       #release_version         = "1.28.5-20240227" ## If empty, update ami if available
     }
 
@@ -280,13 +282,15 @@ module "eks" {
       launch_create         = false
       name_lt               = "lt"
       node_name             = "infra-lt"
-      cluster_version       = "1.32"
+      cluster_version       = "1.33"
       desired_size          = 1
       max_size              = 3
       min_size              = 1
       instance_types_launch = "t3.medium"
       volume-size           = 20
       volume-type           = "gp3"
+      capacity_type         = "SPOT"
+      ami_type              = "AL2023_x86_64_STANDARD"
       #image_id              = "ami-0df33cb954c3f5200" ## If empty, update ami if available
 
       labels = {
@@ -386,4 +390,3 @@ module "eks" {
   #   }
   # }
 }
-

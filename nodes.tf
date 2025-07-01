@@ -114,27 +114,28 @@ module "nodes" {
 
   for_each = var.nodes
 
-  cluster_name            = try(aws_eks_cluster.eks_cluster.name, null)
-  cluster_version         = try(each.value.cluster_version, null)
-  node-role               = try(aws_iam_role.node.arn, "")
-  private_subnet          = try(var.private_subnet, [])
-  node_name               = try(each.value.node_name, null)
-  desired_size            = try(each.value.desired_size, null)
-  max_size                = try(each.value.max_size, null)
-  min_size                = try(each.value.min_size, null)
-  environment             = var.environment
-  instance_types          = try(each.value.instance_types, [])
-  disk_size               = try(each.value.disk_size, null)
-  capacity_type           = try(each.value.capacity_type, "ON_DEMAND")
-  cluster_version_manager = try(each.value.cluster_version_manager, "")
-  release_version         = try(each.value.release_version, "")
-  create_node             = try(each.value.create_node, false)
+  cluster_name    = try(aws_eks_cluster.eks_cluster.name, null)
+  cluster_version = try(each.value.cluster_version, aws_eks_cluster.eks_cluster.version)
+  node-role       = try(aws_iam_role.node.arn, "")
+  private_subnet  = try(var.private_subnet, [])
+  node_name       = try(each.value.node_name, null)
+  desired_size    = try(each.value.desired_size, null)
+  max_size        = try(each.value.max_size, null)
+  min_size        = try(each.value.min_size, null)
+  environment     = var.environment
+  instance_types  = try(each.value.instance_types, [])
+  disk_size       = try(each.value.disk_size, null)
+  capacity_type   = try(each.value.capacity_type, "ON_DEMAND")
+  release_version = try(each.value.release_version, "")
+  create_node     = try(each.value.create_node, false)
 
-  labels = try(each.value.labels, {})
-  taints = try(each.value.taints, {})
+  labels   = try(each.value.labels, {})
+  taints   = try(each.value.taints, {})
+  ami_type = try(each.value.ami_type, "AL2_x86_64")
 
   launch_create           = try(each.value.launch_create, false)
   launch_template_version = try(each.value.launch_template_version, null)
+  cidr_services           = try(aws_eks_cluster.eks_cluster.kubernetes_network_config[0].service_ipv4_cidr, "")
   name                    = try(each.value.name_lt, null)
   image_id                = try(each.value.image_id, "")
   instance_types_launch   = try(each.value.instance_types_launch, "")
@@ -182,7 +183,7 @@ module "node-spot" {
 
   create_node_spotinst                               = try(each.value.create_node_spotinst, false)
   cluster_name                                       = try(aws_eks_cluster.eks_cluster.name, null)
-  cluster_version                                    = try(each.value.cluster_version, null)
+  cluster_version                                    = try(each.value.cluster_version, aws_eks_cluster.eks_cluster.version)
   node-role                                          = aws_iam_instance_profile.iam-node-instance-profile-eks.name
   image_id                                           = try(each.value.image_id, "")
   private_subnet                                     = try(var.private_subnet, [])

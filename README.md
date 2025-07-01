@@ -3,8 +3,8 @@
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.2.9 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.9 |
-| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.10.1 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.100.0 |
+| <a name="requirement_helm"></a> [helm](#requirement\_helm) | = 2.17.0 |
 | <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.20.0 |
 | <a name="requirement_spotinst"></a> [spotinst](#requirement\_spotinst) | >= 1.96.0 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | 4.0.4 |
@@ -13,8 +13,9 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.9 |
-| <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | >= 2.20.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.84.0 |
+| <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | 2.35.1 |
+| <a name="provider_null"></a> [null](#provider\_null) | n/a |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | 4.0.4 |
 
 Some of the addon/controller policies that are currently supported include:
@@ -50,10 +51,10 @@ Some of the addon/controller policies that are currently supported include:
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
 
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.32"
+  kubernetes_version      = "1.33"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
@@ -89,14 +90,14 @@ module "eks" {
     infra = {
       create_node             = true
       node_name               = "infra"
-      cluster_version_manager = "1.32"
+      cluster_version_manager = "1.33"
       desired_size            = 1
       max_size                = 5
       min_size                = 1
       instance_types          = ["t3.medium", "t3a.medium"]
       disk_size               = 20
       capacity_type           = "SPOT"
-      #release_version         = "1.32.5-20240227" ## If empty, update ami if available
+      ami_type                = "AL2023_x86_64_STANDARD"
     }
   }
 }
@@ -107,7 +108,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
   
   ## Config provider spotinst
   enabled_provider_spotinst = true
@@ -115,7 +116,7 @@ module "eks" {
   token                     = ""
   
   cluster_name            = local.cluster_name
-  kubernetes_version      = "1.32"
+  kubernetes_version      = "1.33"
   subnet_ids              = concat(tolist(module.vpc.private_ids), tolist(module.vpc.public_ids))
   environment             = local.environment
   endpoint_private_access = true
@@ -231,7 +232,7 @@ module "eks" {
 
   ## karpenter ASG test v1.24 k8s
   karpenter         = false
-  version_karpenter = "v0.34.0"
+  version_karpenter = "1.5.0"
   webhook_enabled   = true
 
   ## Controller ALB
@@ -301,7 +302,7 @@ module "eks" {
     infra = {
       create_node             = false
       node_name               = "infra"
-      cluster_version_manager = "1.28"
+      cluster_version_manager = "1.33"
       desired_size            = 1
       max_size                = 5
       min_size                = 1
@@ -309,6 +310,7 @@ module "eks" {
       disk_size               = 20
       capacity_type           = "SPOT"
       release_version         = "1.28.5-20240227" ## If empty, update ami if available
+      ami_type                = "AL2023_x86_64_STANDARD"
     }
 
     infra-lt = {
@@ -316,7 +318,7 @@ module "eks" {
       launch_create         = false
       name_lt               = "lt"
       node_name             = "infra-lt"
-      cluster_version       = "1.28"
+      cluster_version       = "1.33"
       desired_size          = 1
       max_size              = 3
       min_size              = 1
@@ -324,6 +326,7 @@ module "eks" {
       volume-size           = 20
       volume-type           = "gp3"
       image_id              = "ami-0df33cb954c3f5200" ## If empty, update ami if available
+      ami_type              = "AL2023_x86_64_STANDARD"
 
       labels = {
         Environment = "${local.environment}"
@@ -538,7 +541,7 @@ rbac = {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.28"
@@ -633,7 +636,7 @@ module "eks" {
 }
 ``` 
 
-- **Example of use**
+- **Example of use < 0.36**
 
 ```yaml
 cat <<EOF | envsubst | kubectl apply -f -
@@ -730,7 +733,7 @@ provider "spotinst" {
 #
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v1.0.11"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.32"
@@ -785,7 +788,7 @@ module "eks" {
 }  
 ```
 #
-## For update eks
+## For update eks *Resolvido na v1.0.11*
 #
 ```
 terraform apply -target module.eks.aws_eks_cluster.eks_cluster
@@ -827,6 +830,8 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | Name | Type |
 |------|------|
 | [aws_cloudwatch_log_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_eks_access_entry.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_access_entry) | resource |
+| [aws_eks_access_policy_association.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_access_policy_association) | resource |
 | [aws_eks_cluster.eks_cluster](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_cluster) | resource |
 | [aws_iam_instance_profile.iam-node-instance-profile-eks](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
 | [aws_iam_openid_connect_provider.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
@@ -851,11 +856,15 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | [aws_security_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group_rule.egress_rule](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.with_source_security_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
+| [kubernetes_annotations.this](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/annotations) | resource |
 | [kubernetes_config_map_v1.aws_auth](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/config_map_v1) | resource |
 | [kubernetes_config_map_v1_data.aws_auth](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/config_map_v1_data) | resource |
+| [null_resource.wait_for_cluster](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_eks_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster) | data source |
 | [aws_eks_cluster_auth.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster_auth) | data source |
+| [aws_iam_session_context.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_session_context) | data source |
+| [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [tls_certificate.this](https://registry.terraform.io/providers/hashicorp/tls/4.0.4/docs/data-sources/certificate) | data source |
 
@@ -863,14 +872,18 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_account_spotinst"></a> [account\_spotinst](#input\_account\_spotinst) | n/a | `string` | `""` | no |
 | <a name="input_additional_rules_security_group"></a> [additional\_rules\_security\_group](#input\_additional\_rules\_security\_group) | Rules extras security group | `any` | `{}` | no |
+| <a name="input_authentication_mode"></a> [authentication\_mode](#input\_authentication\_mode) | The authentication mode for the cluster. Valid values are CONFIG\_MAP, API or API\_AND\_CONFIG\_MAP | `string` | `"API_AND_CONFIG_MAP"` | no |
 | <a name="input_aws-autoscaler-controller"></a> [aws-autoscaler-controller](#input\_aws-autoscaler-controller) | Install release helm controller asg | `bool` | `false` | no |
 | <a name="input_aws-ebs-csi-driver"></a> [aws-ebs-csi-driver](#input\_aws-ebs-csi-driver) | Install release helm controller ebs | `bool` | `false` | no |
 | <a name="input_aws-efs-csi-driver"></a> [aws-efs-csi-driver](#input\_aws-efs-csi-driver) | Install release helm controller efs | `bool` | `false` | no |
 | <a name="input_aws-load-balancer-controller"></a> [aws-load-balancer-controller](#input\_aws-load-balancer-controller) | Install release helm controller alb | `bool` | `false` | no |
+| <a name="input_bootstrap_cluster_creator_admin_permissions"></a> [bootstrap\_cluster\_creator\_admin\_permissions](#input\_bootstrap\_cluster\_creator\_admin\_permissions) | Whether or not to bootstrap the access config values to the cluster | `bool` | `false` | no |
 | <a name="input_bucket_name_velero"></a> [bucket\_name\_velero](#input\_bucket\_name\_velero) | Bucket name already created for use in velero conflicts with create\_bucket | `string` | `""` | no |
 | <a name="input_cert-manager"></a> [cert-manager](#input\_cert-manager) | Install release helm controller cert-manager | `bool` | `false` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name cluster | `string` | `"k8s"` | no |
+| <a name="input_create_access_entry"></a> [create\_access\_entry](#input\_create\_access\_entry) | Whether or not to bootstrap the access config values to the cluster | `bool` | `true` | no |
 | <a name="input_create_aws_auth_configmap"></a> [create\_aws\_auth\_configmap](#input\_create\_aws\_auth\_configmap) | Create configmap aws-auth | `bool` | `false` | no |
 | <a name="input_create_bucket"></a> [create\_bucket](#input\_create\_bucket) | Bucket use for velero conflicts with bucket\_name\_velero | `bool` | `false` | no |
 | <a name="input_create_core"></a> [create\_core](#input\_create\_core) | Install addons core | `bool` | `false` | no |
@@ -889,7 +902,9 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_custom_values_nginx"></a> [custom\_values\_nginx](#input\_custom\_values\_nginx) | Custom controler ingress-nginx a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_custom_values_velero"></a> [custom\_values\_velero](#input\_custom\_values\_velero) | Custom velero a Release is an instance of a chart running in a Kubernetes cluster | `any` | `{}` | no |
 | <a name="input_domain"></a> [domain](#input\_domain) | Domain used helm External dns | `string` | `""` | no |
+| <a name="input_eks_access_entry"></a> [eks\_access\_entry](#input\_eks\_access\_entry) | Create Access Entry Configurations for an EKS Cluster | `any` | `{}` | no |
 | <a name="input_enabled_cluster_log_types"></a> [enabled\_cluster\_log\_types](#input\_enabled\_cluster\_log\_types) | List of the desired control plane logging to enable. For more information, see Amazon EKS Control Plane Logging. | `list(string)` | `[]` | no |
+| <a name="input_enabled_provider_spotinst"></a> [enabled\_provider\_spotinst](#input\_enabled\_provider\_spotinst) | n/a | `bool` | `false` | no |
 | <a name="input_endpoint_private_access"></a> [endpoint\_private\_access](#input\_endpoint\_private\_access) | Endpoint access private | `bool` | `false` | no |
 | <a name="input_endpoint_public_access"></a> [endpoint\_public\_access](#input\_endpoint\_public\_access) | Endpoint access public | `bool` | `true` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Env tags | `string` | `null` | no |
@@ -908,26 +923,40 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="input_nodes"></a> [nodes](#input\_nodes) | Nodes general | `any` | `{}` | no |
 | <a name="input_nodes_spot"></a> [nodes\_spot](#input\_nodes\_spot) | Nodes spotinst | `any` | `{}` | no |
 | <a name="input_private_subnet"></a> [private\_subnet](#input\_private\_subnet) | List subnet nodes | `list(any)` | `[]` | no |
+| <a name="input_public_access_cidrs"></a> [public\_access\_cidrs](#input\_public\_access\_cidrs) | List of CIDR blocks. Indicates which CIDR blocks can access the Amazon EKS public API server endpoint when enabled. EKS defaults this to a list with 0.0.0.0/0. | `list(string)` | <pre>[<br>  "0.0.0.0/0"<br>]</pre> | no |
 | <a name="input_rbac"></a> [rbac](#input\_rbac) | Map rbac configuration | `any` | `{}` | no |
 | <a name="input_security_additional"></a> [security\_additional](#input\_security\_additional) | Additional security grupo cluster | `bool` | `false` | no |
 | <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | Security group ids | `list(any)` | `[]` | no |
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | Subnet private | `list(any)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A mapping of tags to assign to the resource | `map(string)` | `{}` | no |
+| <a name="input_token"></a> [token](#input\_token) | n/a | `string` | `""` | no |
 | <a name="input_velero"></a> [velero](#input\_velero) | Install release helm velero | `bool` | `false` | no |
+| <a name="input_version_chart_alb"></a> [version\_chart\_alb](#input\_version\_chart\_alb) | Version chart alb | `string` | `"1.7.1"` | no |
+| <a name="input_version_chart_asg"></a> [version\_chart\_asg](#input\_version\_chart\_asg) | Version chart asg | `string` | `"9.37.0"` | no |
+| <a name="input_version_chart_cert"></a> [version\_chart\_cert](#input\_version\_chart\_cert) | Version chart cert-manager | `string` | `"v1.14.4"` | no |
+| <a name="input_version_chart_ebs"></a> [version\_chart\_ebs](#input\_version\_chart\_ebs) | Version chart ebs | `string` | `"2.31.0"` | no |
+| <a name="input_version_chart_efs"></a> [version\_chart\_efs](#input\_version\_chart\_efs) | Version chart efs | `string` | `"3.0.3"` | no |
+| <a name="input_version_chart_external_dns"></a> [version\_chart\_external\_dns](#input\_version\_chart\_external\_dns) | Version chart dns | `string` | `"1.14.4"` | no |
+| <a name="input_version_chart_karpenter"></a> [version\_chart\_karpenter](#input\_version\_chart\_karpenter) | Install release helm karpenter | `string` | `"v0.34.0"` | no |
+| <a name="input_version_chart_nginx"></a> [version\_chart\_nginx](#input\_version\_chart\_nginx) | Version chart nginx | `string` | `"4.10.0"` | no |
+| <a name="input_version_chart_velero"></a> [version\_chart\_velero](#input\_version\_chart\_velero) | Version chart velero | `string` | `"6.1.0"` | no |
 | <a name="input_version_image_velero"></a> [version\_image\_velero](#input\_version\_image\_velero) | Image version velero | `string` | `"v1.13.1"` | no |
-| <a name="input_version_karpenter"></a> [version\_karpenter](#input\_version\_karpenter) | Install release helm karpenter | `string` | `"v0.34.0"` | no |
+| <a name="input_version_plugin_aws"></a> [version\_plugin\_aws](#input\_version\_plugin\_aws) | Image version velero | `string` | `"1.7.0"` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC id | `string` | `""` | no |
+| <a name="input_webhook_enabled"></a> [webhook\_enabled](#input\_webhook\_enabled) | webhook karpenter | `bool` | `false` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
+| <a name="output_cluster_auth"></a> [cluster\_auth](#output\_cluster\_auth) | n/a |
 | <a name="output_cluster_cert"></a> [cluster\_cert](#output\_cluster\_cert) | n/a |
 | <a name="output_cluster_endpoint"></a> [cluster\_endpoint](#output\_cluster\_endpoint) | n/a |
 | <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | n/a |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | n/a |
 | <a name="output_cluster_oidc"></a> [cluster\_oidc](#output\_cluster\_oidc) | n/a |
 | <a name="output_cluster_security_group_id"></a> [cluster\_security\_group\_id](#output\_cluster\_security\_group\_id) | n/a |
+| <a name="output_cluster_service_cidr"></a> [cluster\_service\_cidr](#output\_cluster\_service\_cidr) | n/a |
 | <a name="output_cluster_version"></a> [cluster\_version](#output\_cluster\_version) | n/a |
 | <a name="output_master-iam-arn"></a> [master-iam-arn](#output\_master-iam-arn) | n/a |
 | <a name="output_master-iam-name"></a> [master-iam-name](#output\_master-iam-name) | n/a |
@@ -935,3 +964,4 @@ terraform apply -target module.eks.aws_eks_cluster.eks_cluster
 | <a name="output_node-iam-name"></a> [node-iam-name](#output\_node-iam-name) | n/a |
 | <a name="output_node-iam-name-profile"></a> [node-iam-name-profile](#output\_node-iam-name-profile) | n/a |
 | <a name="output_oidc_arn"></a> [oidc\_arn](#output\_oidc\_arn) | n/a |
+| <a name="output_oidc_url"></a> [oidc\_url](#output\_oidc\_url) | n/a |
