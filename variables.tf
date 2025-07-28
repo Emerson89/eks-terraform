@@ -427,3 +427,13 @@ variable "webhook_enabled" {
   type        = bool
   default     = false
 }
+
+variable "interruptionQueue" {
+  type    = string
+  default = ""
+}
+
+variable "create_sqs" {
+  type    = bool
+  default = false
+}

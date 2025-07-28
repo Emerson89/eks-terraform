@@ -74,6 +74,7 @@ module "karpenter" {
       CLUSTER_NAME      = "${aws_eks_cluster.eks_cluster.name}"
       aws_arn_karpenter = module.iam-karpenter[0].arn[0]
       webhook_enabled   = var.webhook_enabled
+      interruptionQueue = var.create_sqs ? aws_sqs_queue.node_termination_handler[0].name : var.interruptionQueue
     })])
 
   }

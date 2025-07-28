@@ -185,7 +185,7 @@ settings:
   vmMemoryOverheadPercent: 0.075
   # -- interruptionQueue is disabled if not specified. Enabling interruption handling may
   # require additional permissions on the controller service account. Additional permissions are outlined in the docs.
-  interruptionQueue: ""
+  interruptionQueue: ${interruptionQueue}
   # -- Reserved ENIs are not included in the calculations for max-pods or kube-reserved
   # This is most often used in the VPC CNI custom networking setup https://docs.aws.amazon.com/eks/latest/userguide/cni-custom-network.html
   reservedENIs: "0"

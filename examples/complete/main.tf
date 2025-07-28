@@ -60,7 +60,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.1.0"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.33"
@@ -197,6 +197,7 @@ module "eks" {
   karpenter               = true
   version_chart_karpenter = "1.5.0"
   webhook_enabled         = true
+  create_sqs              = true
 
   ## Controller ALB
   aws-load-balancer-controller = false
@@ -273,7 +274,7 @@ module "eks" {
       disk_size       = 20
       capacity_type   = "SPOT"
       ## https://docs.aws.amazon.com/pt_br/eks/latest/userguide/retrieve-ami-id.html
-      ami_type        = "AL2023_x86_64_STANDARD"
+      ami_type = "AL2023_x86_64_STANDARD"
       #release_version         = "1.28.5-20240227" ## If empty, update ami if available
     }
 

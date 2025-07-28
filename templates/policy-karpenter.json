@@ -17,7 +17,11 @@
                 "ec2:CreateLaunchTemplate",
                 "ec2:CreateFleet",
                 "ec2:DescribeSpotPriceHistory",
-                "pricing:GetProducts"
+                "pricing:GetProducts",
+                "sqs:GetQueueUrl",
+                "sqs:SendMessage",
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage"
             ],
             "Effect": "Allow",
             "Resource": "*",

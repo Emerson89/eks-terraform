@@ -51,7 +51,7 @@ Some of the addon/controller policies that are currently supported include:
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.1.0"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.33"
@@ -108,7 +108,7 @@ module "eks" {
 
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.1.0"
   
   ## Config provider spotinst
   enabled_provider_spotinst = true
@@ -234,6 +234,7 @@ module "eks" {
   karpenter         = false
   version_karpenter = "1.5.0"
   webhook_enabled   = true
+  create_sqs        = true
 
   ## Controller ALB
   aws-load-balancer-controller = false
