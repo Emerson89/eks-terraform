@@ -60,7 +60,7 @@ module "vpc" {
 ### EKS
 
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v2.1.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.1.1"
 
   cluster_name            = local.cluster_name
   kubernetes_version      = "1.33"
@@ -194,10 +194,10 @@ module "eks" {
   aws-autoscaler-controller = false
 
   ## karpenter ASG test v1.24 k8s
-  karpenter               = true
+  karpenter               = false
   version_chart_karpenter = "1.5.0"
-  webhook_enabled         = true
-  create_sqs              = true
+  webhook_enabled         = false
+  create_sqs              = false
 
   ## Controller ALB
   aws-load-balancer-controller = false
@@ -264,7 +264,7 @@ module "eks" {
   ## GROUPS NODES
   nodes = {
     infra = {
-      create_node     = true
+      create_node     = false
       node_name       = "infra"
       cluster_version = "1.33"
       desired_size    = 1
@@ -325,10 +325,9 @@ module "eks" {
       ]
     }
     infra-asg = {
-      create_node           = false
       launch_create         = false
       asg_create            = false
-      cluster_version       = "1.32"
+      cluster_version       = "1.33"
       name_lt               = "lt-asg"
       desired_size          = 1
       max_size              = 2
@@ -339,7 +338,37 @@ module "eks" {
       taints_lt             = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
       labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
       name_asg              = "infra"
-      vpc_zone_identifier   = "${module.vpc.private_ids}"
+      ami_type              = "AL2023_x86_64_STANDARD"
+      vpc_zone_identifier   = ["${module.vpc.private_ids[0]}"]
+
+      ## Config SPOT
+      capacity_rebalance         = true
+      default_cooldown           = 300
+      use_mixed_instances_policy = true
+
+      mixed_instances_policy = {
+        instances_distribution = {
+          on_demand_base_capacity                  = 0
+          on_demand_percentage_above_base_capacity = 0
+          spot_allocation_strategy                 = "price-capacity-optimized"
+          spot_instance_pools                      = 0
+        }
+        override = [
+          {
+            instance_type = "t3.medium"
+          },
+          {
+            instance_type = "t3a.medium"
+          },
+          {
+            instance_type = "t3.large"
+          },
+        ]
+
+      }
+
+      termination_policies = ["AllocationStrategy", "OldestLaunchTemplate", "OldestInstance"]
+
       asg_tags = [
         {
           key                 = "Environment"

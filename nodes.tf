@@ -56,7 +56,13 @@ locals {
 
   network_interfaces = [
     {
-      security_groups = [try(aws_security_group.this[0].id, [])]
+      security_groups = [try(aws_security_group.this[0].id, "")]
+    }
+  ]
+
+  network_interfaces_default = [
+    {
+      security_groups = [try(aws_eks_cluster.eks_cluster.vpc_config[0].cluster_security_group_id, "")]
     }
   ]
 
@@ -141,7 +147,7 @@ module "nodes" {
   instance_types_launch   = try(each.value.instance_types_launch, "")
   volume-size             = try(each.value.volume-size, null)
   volume-type             = try(each.value.volume-type, null)
-  network_interfaces      = var.security_additional ? local.network_interfaces : try(each.value.network_interfaces, [])
+  network_interfaces      = var.security_additional ? local.network_interfaces : local.network_interfaces_default
   tag_specifications      = try(each.value.tag_specifications, [])
   use-max-pods            = try(each.value.use-max-pods, false)
   max-pods                = try(each.value.max-pods, 17)
@@ -157,7 +163,7 @@ module "nodes" {
   capacity_rebalance         = try(each.value.capacity_rebalance, true)
   default_cooldown           = try(each.value.default_cooldown, 300)
   use_mixed_instances_policy = try(each.value.use_mixed_instances_policy, false)
-  mixed_instances_policy     = try(each.value.use_mixed_instances_policy, {})
+  mixed_instances_policy     = try(each.value.mixed_instances_policy, {})
   termination_policies       = try(each.value.termination_policies, ["OldestInstance"])
   asg_tags                   = try(each.value.asg_tags, [])
 

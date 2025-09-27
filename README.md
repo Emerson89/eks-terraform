@@ -360,7 +360,6 @@ module "eks" {
       ]
     }
     infra-asg = {
-      create_node           = false
       launch_create         = false
       asg_create            = false
       cluster_version       = "1.28"
@@ -374,7 +373,7 @@ module "eks" {
       taints_lt             = "--register-with-taints=dedicated=${local.environment}:NoSchedule"
       labels_lt             = "--node-labels=eks.amazonaws.com/nodegroup=infra"
       name_asg              = "infra"
-      vpc_zone_identifier   = "${module.vpc.private_ids}"
+      vpc_zone_identifier   = ["${module.vpc.private_ids}"]
       asg_tags = [
         {
           key                 = "Environment"
@@ -734,7 +733,7 @@ provider "spotinst" {
 #
 ```hcl
 module "eks" {
-  source = "github.com/Emerson89/eks-terraform.git?ref=v2.0.0"
+  source = "github.com/Emerson89/eks-terraform.git?ref=v2.1.1"
 
   cluster_name            = "k8s"
   kubernetes_version      = "1.32"
