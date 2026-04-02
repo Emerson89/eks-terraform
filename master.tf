@@ -78,6 +78,8 @@ resource "aws_eks_cluster" "eks_cluster" {
   role_arn = aws_iam_role.master.arn
   version  = var.kubernetes_version
 
+  bootstrap_self_managed_addons = var.bootstrap_self_managed_addons
+
   access_config {
     authentication_mode                         = var.authentication_mode
     bootstrap_cluster_creator_admin_permissions = var.bootstrap_cluster_creator_admin_permissions

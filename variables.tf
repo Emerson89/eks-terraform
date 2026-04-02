@@ -437,3 +437,9 @@ variable "create_sqs" {
   type    = bool
   default = false
 }
+
+variable "bootstrap_self_managed_addons" {
+  description = "Install default unmanaged add-ons, such as aws-cni, kube-proxy, and CoreDNS during cluster creation. If false, you must manually install desired add-ons. Changing this value will force a new cluster to be created. "
+  type        = bool
+  default     = true
+}
